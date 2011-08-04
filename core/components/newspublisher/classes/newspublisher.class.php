@@ -701,7 +701,7 @@ class Newspublisher {
                         $options[$template->get('templatename')] = $template->get('id');
                     }
                 }
-                $inner .= $this->_processList($field, $replace, 'dropdown', $options, array($this->modx->getOption('default_template')), true);
+                $inner .= $this->_processList($field, $replace, 'dropdown', $options, array($this->resource->get('template')), true);
                 break;
 
             case 'contentType':
