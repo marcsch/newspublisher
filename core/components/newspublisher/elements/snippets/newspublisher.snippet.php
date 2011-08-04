@@ -47,7 +47,12 @@
     @property cancelid    - (optional) Document id to load on cancel; defaults to http_referer.
     @property badwords    - (optional) Comma delimited list of words not allowed in new document.
     @property template    - (optional) Name of template to use for new document; set to 'parent' to use parent's template;
-                       for 'parent', &parent must be set; defaults to system default template.
+                       defaults to system default template.
+    @property ...         - (optional) Any resource field can have a default value.
+                       Set to 'parent' to use parent's value for this field;
+                       Set to 'System Default' in order to use the default system setting (only if available).
+                       The following fields have a default system setting:  published, template, hidemenu, cacheable, searchable, richtext
+                       examples: &publishedon=`2011-04-01 20:11` &template=`parent` &searchable=`System Default` (the last property ist not really necessary, since it is defined in the default property set)
     @property headertpl   - (optional) Header Tpl chunk (chunk name) to be inserted at the beginning of a new document.
     @property footertpl   - (optional) Footer Tpl chunk (chunk name) to be inserted at the end of a new document.
     @property tinyheight  - (optional) Height of richtext areas; default `400px`.
@@ -73,6 +78,8 @@
 
     @property aliastitle  - (optional) Set to 1 to use lowercase, hyphenated, page title as alias. Defaults to 1.
                        If 0,'article-(date created)' is used. Ignored if alias is filled in form.
+    @property aliasprefix - (optional) Prefix to be prepended to alias for new documents with an empty alias; alias will be aliasprefix - timestamp (or alias - customDate if the 'aliasdatesuffix property was set)";
+    @property aliasdatesuffix - (optional) Allows to have a formatted date/time instead of the timestamp suffix. Example: '_Ymd' leads to 'aliasprefix_20110707' (see documentation for the php date() function for all formatting options). Default: empty";
     @property clearcache  - (optional) When set to 1, cache will be cleared after saving the resource; default: 1.
     @property listboxmax  - (optional) Maximum length for listboxes. Default is 8 items.
     @property cssfile     - (optional) Name of CSS file to use, or `0` for no CSS file; defaults to newspublisher.css.

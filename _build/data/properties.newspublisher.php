@@ -26,6 +26,14 @@ $properties = array(
         'value' => '1',
         'lexicon' => 'newspublisher:properties',
     ),
+     array(
+        'name' => 'aliasdatesuffix',
+        'desc' => 'np_aliasdatesuffix_desc',
+        'type' => 'textfield',
+        'options' => '',
+        'value' => '',
+        'lexicon' => 'newspublisher:properties',
+    ),
     array(
         'name' => 'badwords',
         'desc' => 'np_badwords_desc',
@@ -425,7 +433,7 @@ $properties = array(
         'desc' => 'np_template_desc',
         'type' => 'textfield',
         'options' => '',
-        'value' => '',
+        'value' => 'System Default',
         'lexicon' => 'newspublisher:properties',
     ),
     array(
