@@ -1627,7 +1627,7 @@ class Newspublisher {
 
                     /* set error for header */
                     $msg = $this->modx->lexicon('np_missing_field');
-                    $msg = str_replace('[[+name]]', $field, $msg);
+                    $msg = str_replace('[[+name]]', $this->_getCaption($field), $msg);
                     $this->setError($msg);
 
                 }
@@ -1653,6 +1653,33 @@ class Newspublisher {
         return $success;
     }
 
+
+    protected function _getCaption($field_or_tv) {
+      
+        $resourceFieldNames = array_keys($this->modx->getFields('modResource'));
+        
+        if (in_array($field_or_tv, $resourceFieldNames)) {
+            $type = $this->resource->get('class_key');
+            switch ($type) {
+                case 'modSymLink':
+                    $caption = '[[%symlink]]';
+                    break;
+                case 'modWebLink':
+                    $caption = '[[%weblink]]';
+                    break;
+                default:
+                    $caption = '[[%resource_' . $field_or_tv . ']]';
+            }
+        } else {
+            $tv = $this->modx->getObject('modTemplateVar',array('name' => $field_or_tv));
+            if (!isset($tv)) return '';
+            $caption = $tv->get('caption');
+            if (empty($caption)) $caption = $tv->get('name');
+        }
+        return $caption;
+    }
+
+
 /** Sets placeholder for field error messages
  * @param (string) $fieldName - name of field
  * @param (string) $msg - lexicon error message string
@@ -1660,7 +1687,7 @@ class Newspublisher {
  */
     /* ToDo: Change [[+name]] to [[+npx.something]]?, or ditch it (or not)*/
     public function setFieldError($fieldName, $msg) {
-        $msg = str_replace('[[+name]]', $fieldName, $msg);
+        $msg = str_replace('[[+name]]', $this->_getCaption($fieldName), $msg);
         $msg = str_replace("[[+{$this->prefix}.error]]", $msg, $this->tpls['fieldErrorTpl']);
         $ph = 'error_' . $fieldName;
         $this->modx->toPlaceholder($ph, $msg, $this->prefix);
