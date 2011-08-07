@@ -30,6 +30,7 @@
 /* NewsPublisher EditThisButton strings */
 $_lang['np_edit'] = 'Edit';
 $_lang['np_delete'] = 'Delete';
+$_lang['np_add'] = 'Add new document';
 $_lang['np_confirm_delete'] = 'Do you really want to delete this document?';
 $_lang['np_no_edit_document_permission'] = 'No edit_document permission';
 $_lang['np_no_context_save_document_permission'] = 'No context save_document permission';

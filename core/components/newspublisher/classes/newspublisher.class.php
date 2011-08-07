@@ -250,6 +250,7 @@ class Newspublisher {
 
 
             /* Array of fields to show in form */
+            if (isset($_POST['show'])) $this->props['show'] = $_POST['show'];
             $this->fieldsToShow = explode(',', $this->props['show']);
             
             /* see if it's a repost */
@@ -307,17 +308,6 @@ class Newspublisher {
                     $this->setError($this->modx->lexicon('np_create_permission_denied'));
                 }
                 $this->resource = $this->modx->newObject('modResource');
-                
-                /* get folder id and resource object where we should store articles
-                 * else store under current document */
-                // allow 'parent' parameter to be used as well as synonym for 'parentid'
-                if (!empty($this->props['parentid'])) $this->props['parent'] = $this->props['parentid'];
-                $parentId = !empty($this->props['parent']) ? intval($this->props['parent']):$this->modx->resource->get('id');
-                $this->parentObj = $this->modx->getObject('modResource',$parentId);
-                if (! $this->parentObj) {
-                    $this->setError('&amp;' .$this->modx->lexicon('np_no_parent'));
-                    return $retVal;
-                }
 
                 /* str_replace to prevent rendering of placeholders */
                 $fs = array();
@@ -328,12 +318,28 @@ class Newspublisher {
 
                 /* Set initial values for fields  */
                 $validFields = $this->modx->getFields('modResource');
-                $fieldValues = array_intersect_key(array_merge($this->props, $_POST),  $validFields);
+                $this->props = array_merge($this->props, $_POST);
+                $fieldValues = array_intersect_key($this->props,  $validFields);
 
-                if (!isset ($fieldValues['parent'])) $fieldValues['parent'] = $parentId;
+
+                /* get folder id and resource object where we should store articles
+                 * else store under current document */
+
+                // allow 'parent' parameter to be used as well as synonym for 'parentid'
+                if (!empty($fieldValues['parentid'])) $fieldValues['parent'] = $fieldValues['parentid'];
+                
+                $fieldValues['parent'] = !empty($fieldValues['parent']) ? intval($fieldValues['parent']) : $this->modx->resource->get('id');
+                $this->parentObj = $this->modx->getObject('modResource', $fieldValues['parent']);
+                if (! $this->parentObj) {
+                    $this->setError('&amp;' .$this->modx->lexicon('np_no_parent'));
+                    return $retVal;
+                }
+                
+                /* Other fields that have to be set correctly */
                 $fieldValues['createdby'] = $this->modx->user->get('id');
                 $fieldValues['context_key'] = $this->parentObj->get('context_key');
-
+                
+                /* Store all field values in the resource object */
                 foreach($fieldValues as $field => $value) {
                       $value = isset($_POST[$field]) ? $_POST[$field] : $this->_setDefault($field, $value);
                       $this->resource->set($field, $value);
@@ -345,6 +351,7 @@ class Newspublisher {
 
                 }
 
+
                   /* Get resource groups (JSON encoded array) if 'groups' parameter was set */
                 if (! empty($this->props['groups'])) {
                     $this->groups = $this->_setGroups($this->props['groups']);
@@ -353,7 +360,7 @@ class Newspublisher {
                 $this->header = !empty($this->props['headertpl']) ? $this->modx->getChunk($this->props['headertpl']) : '';
                 $this->footer = !empty($this->props['footertpl']) ? $this->modx->getChunk($this->props['footertpl']):'';
                 $this->aliasTitle = $this->props['aliastitle']? true : false;
-                $this->clearcache = isset($_POST['clearcache'])? $_POST['clearcache'] : $this->props['clearcache'] ? true: false;
+                $this->clearcache = $this->props['clearcache'] ? true: false;
                 $this->intMaxlength = !empty($this->props['intmaxlength'])? $this->props['intmaxlength'] : 10;
                 $this->textMaxlength = !empty($this->props['textmaxlength'])? $this->props['textmaxlength'] : 60;
 

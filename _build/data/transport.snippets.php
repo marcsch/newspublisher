@@ -58,4 +58,16 @@ $properties = include $sources['data'].'properties.npeditthisbutton.php';
 $snippets[1]->setProperties($properties);
 unset($properties);
 
+$snippets[1]= $modx->newObject('modSnippet');
+$snippets[1]->fromArray(array(
+    'id' => 2,
+    'name' => 'NpAddButton',
+    'description' => 'Displays a button to create a new resource with NewsPublisher.',
+    'snippet' => getSnippetContent($sources['source_core'].'/elements/snippets/npaddbutton.snippet.php'),
+),'',true,true);
+$properties = include $sources['data'].'properties.npaddbutton.php';
+$snippets[1]->setProperties($properties);
+unset($properties);
+
+
 return $snippets;
