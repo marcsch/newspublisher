@@ -31,6 +31,7 @@ $_lang['np_aliastitle_desc'] = "(optional) Set to Yes to use lowercase, hyphenat
 $_lang['np_badwords_desc'] = '(optional) Comma delimited list of words not allowed in document.';
 $_lang['np_cacheable_desc'] = "(optional) Sets the flag to as to whether or not the resource is cached; default: cache_default System Setting for new resources; set to `Parent` to use parent's setting.";
 $_lang['np_cancelid_desc'] = '(optional) Document id to load on cancel; default: http_referer.';
+$_lang['np_deleteid_desc'] = '(optional) Document id to load after a resource was deleted; defaults to the last page visited before the resource was displayed and/or edited. If there are mutiple NpEditThisButtons per page, the page will stay the same by default';
 $_lang['np_clearcache_desc'] = '(optional) When set to Yes, the cache will be cleared after saving the resource; default: Yes.';
 $_lang['np_cssfile_desc'] = '(optional) Name of CSS file to use, or `` for no CSS file; default: newspublisher.css. File should be in assets/newspublisher/css/ directory';
 $_lang['np_errortpl_desc'] = '(optional) Name of Tpl chunk for formatting field errors. Must contain [[+np.error]] placeholder.';
@@ -72,8 +73,8 @@ $_lang['np_aliasprefix_desc'] = '(optional) Prefix to be prepended to alias for 
 $_lang['np_intmaxlength_desc'] = '(optional) Max length for integer input fields; default: 10.';
 $_lang['np_textmaxlength_desc'] = '(optional) Max length for text input fields; default: 60.';
 $_lang['np_hoverhelp_desc'] = '(optional) Show help when hovering over field caption; default: Yes.';
-
-
+$_lang['show_delete_desc'] = 'If set to `Yes` a button for deleting the document will be shown. Note that deleting will only work if a valid np_id is specified. Defaults to `Yes`';
+$_lang['show_cancel_desc'] = 'If set to `Yes`, aa cancel button should be shown. defaults to `Yes`';
 
 
 

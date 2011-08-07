@@ -121,9 +121,9 @@ span.fielderrormessage {
     margin:20px 0px 0px 0px;
     padding:0;
 }
-div.newspublisher input.submit {
+div.newspublisher input.submit, div.newspublisher input.cancel, div.newspublisher input.delete {
     display:inline;
-    margin: 30px;
+    margin: 30px 15px;
     padding:0;
     width:8em;
 }
@@ -135,12 +135,6 @@ input#np-id {
     color:gray;
     width:4em;
 
-}
-div.newspublisher input.cancel {
-    display:inline;
-    margin: 30px;
-    padding:0;
-    width:8em;
 }
 div.newspublisher input.checkbox {
     width:2em;

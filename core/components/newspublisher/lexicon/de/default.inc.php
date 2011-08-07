@@ -20,7 +20,7 @@
  * @package newspublisher
  */
 /**
- * Default Lexicon Topic (German translation by mschlegal)
+ * Default Lexicon Topic (German translation by mschlegel)
  *
  * @package newspublisher
  * @subpackage lexicon
@@ -53,7 +53,13 @@ $_lang['np_date_format'] = 'd-dt-m-dt-Y';
 $_lang['np_invalid_date'] = 'Datum ungültig!';
 $_lang['np_view_permission_denied'] = 'Sie besitzen nicht die nötigen Zugriffsrechte, um dieses Dokument anzuzeigen';
 $_lang['np_create_permission_denied'] = 'Sie besitzen nicht die nötigen Zugriffsrechte, um ein Dokument zu erstellen';
+$_lang['np_publish_permission_denied'] = 'Das Dokument soll publiziert werden, aber Sie besitzen nicht die nötigen Zugriffsrechte, um ein Dokument zu publizieren';
 $_lang['np_save_permission_denied'] = 'Sie besitzen nicht die nötigen Zugriffsrechte, um dieses Dokument anzuzeigen';
+$_lang['np_confirm_delete'] = 'Möchten sie dieses Dokument wirklich löschen?';
+$_lang['np_submit'] = 'Speichern';
+$_lang['np_cancel'] = 'Abbrechen';
+$_lang['np_delete'] = 'Löschen';
+$_lang['np_error_occured'] = 'Ein Fehler ist aufgetreten: ';
 $_lang['np_no_edit_self'] = 'Sie können die Newspublisher-Seite nicht bearbeiten.';
 $_lang['np_no_parent'] = 'Für die Eigenschaft wurde `parent` angegeben, aber die Ressource hat keine definier Elternressource: ';
 $_lang['np_post_save_no_resource'] = 'Konnte Ressource nach dem Speichern nicht aufrufen';

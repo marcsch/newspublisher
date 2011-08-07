@@ -20,7 +20,7 @@
  * @package newspublisher
  */
 /**
- * Button German Lexicon Topic (German translation by mschlegal)
+ * Button German Lexicon Topic (German translation by mschlegel)
  *
  * @package newspublisher
  * @subpackage lexicon
@@ -29,9 +29,12 @@
 
 /* NewsPublisher EditThisButton strings */
 $_lang['np_edit'] = 'Bearbeiten';
+$_lang['np_delete'] = 'Löschen';
+$_lang['np_confirm_delete'] = 'Möchten Sie diese Dokument wirklich löschen?';
 $_lang['np_no_edit_document_permission'] = 'Keine Rechte, Dokumente zu bearbeiten';
 $_lang['np_no_context_save_document_permission'] = 'Keine Rechte, Dokumente in diesem Kontext zu speichern';
 $_lang['np_no_resource_save_document_permission'] = 'Keine Rechte, dieses Dokument zu speichern';
+$_lang['np_no_context_delete_document_permission'] = 'Keine Rechte, Dokumente in diesem Kontext zu löschen';
 $_lang['np_no_edit_home_page'] = 'Kann Startseite nicht bearbeiten';
 $_lang['np_no_np_id'] = 'Konnte np_id nicht setzen. Setzen Sie die ID der Newspublisher-Seite manuell.';
 $_lang['np_id_desc'] = 'ID der Newspublisher-Seite (automatisch im ersten Durchgang gesetzt).';

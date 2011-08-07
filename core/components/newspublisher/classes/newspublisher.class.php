@@ -207,6 +207,17 @@ class Newspublisher {
         return $this->isPostBack;
     }
 
+
+    /** gets the resource ID or null if it is a new resource
+     *
+     * @access public
+     * @return (int) resource ID
+     */
+
+    public function getResourceId() {
+        return $this->existing;
+    }
+
     /** Initialize variables and placeholders.
      *  Uses $_POST on postback.
      *  Checks for an existing resource to edit in $_POST.
@@ -255,6 +266,7 @@ class Newspublisher {
 
             /* see if it's a repost */
             $this->setPostback(isset($_POST['hidSubmit']) && $_POST['hidSubmit'] == 'true');
+
 
             if($this->existing) {
 
@@ -446,6 +458,7 @@ class Newspublisher {
                } /* end if ($whichEditor == 'TinyMCE') */
 
            } /* end if ($richtext) */
+
 
         } /* end init */
 
@@ -1429,40 +1442,20 @@ class Newspublisher {
 
     } /* end saveResource() */
 
-        /** Forward user to another page (default is edited page)
+
+        /** Deletes the current resource
          *
          *  @access public
-         *  @param (int) $postId - ID of page to forward to
-         *  */
+         */
 
-        public function forward($postId) {
-            if (empty($postId)) {
-                $postId = $this->existing? $this->existing : $this->resource->get('id');
-            }
-            /* clear cache on new resource */
-            if (! $this->existing) {
-               $cacheManager = $this->modx->getCacheManager();
-               $cacheManager->clearCache(array (
-                    "{$this->resource->context_key}/",
-                ),
-                array(
-                    'objects' => array('modResource', 'modContext', 'modTemplateVarResource'),
-                    'publishing' => true
-                    )
-                );
-            }
+    public function deleteResource() {
+      
+        $response = $this->modx->runProcessor('resource/delete', array('id' => $this->resource->get('id')));
 
-            $_SESSION['np_resource_id'] = $this->resource->get('id');
-            $goToUrl = $this->modx->makeUrl($postId);
-
-            /* redirect to post id */
-
-            /* ToDo: The next two lines can probably be removed once makeUrl() and sendRedirect() are updated */
-            $controller = $this->modx->getOption('request_controller',null,'index.php');
-            $goToUrl = $controller . '?id=' . $postId;
-
-            $this->modx->sendRedirect($goToUrl);
+        if ($response->isError()) {
+                $this->setError($this->modx->lexicon('np_error_occured') . $response->getMessage());
         }
+    }
 
     /** creates a JSON string to send in the resource_groups field
      * for resource/update or resource/create processors.

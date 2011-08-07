@@ -82,9 +82,17 @@ $properties = array(
     array(
         'name' => 'cancelid',
         'desc' => 'np_cancelid_desc',
-        'type' => 'combo-boolean',
+        'type' => 'numberfield',
         'options' => '',
-        'value' => '0',
+        'value' => '',
+        'lexicon' => 'newspublisher:properties',
+    ),
+    array(
+        'name' => 'deleteid',
+        'desc' => 'np_deleteid_desc',
+        'type' => 'numberfield',
+        'options' => '',
+        'value' => '',
         'lexicon' => 'newspublisher:properties',
     ),
     array(
@@ -467,6 +475,22 @@ $properties = array(
         'options' => '',
         'value' => '1',
         'lexicon' => 'newspublisher:properties',
+    ),
+    array(
+        'name' => 'showcancel',
+        'desc' => 'show_cancel_desc',
+        'type' => 'combo-boolean',
+        'options' => '',
+        'value' => '1',
+        'lexicon' => 'newspublisher:button',
+    ),
+    array(
+        'name' => 'showdelete',
+        'desc' => 'show_delete_desc',
+        'type' => 'combo-boolean',
+        'options' => '',
+        'value' => '1',
+        'lexicon' => 'newspublisher:button',
     ),
 );
 
