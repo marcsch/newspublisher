@@ -54,7 +54,12 @@
                        the same by default
     @property badwords    - (optional) Comma delimited list of words not allowed in new document.
     @property template    - (optional) Name of template to use for new document; set to 'parent' to use parent's template;
-                       for 'parent', &parent must be set; defaults to system default template.
+                       defaults to system default template.
+    @property ...         - (optional) Any resource field can have a default value.
+                       Set to 'parent' to use parent's value for this field;
+                       Set to 'System Default' in order to use the default system setting (only if available).
+                       The following fields have a default system setting:  published, template, hidemenu, cacheable, searchable, richtext
+                       examples: &publishedon=`2011-04-01 20:11` &template=`parent` &searchable=`System Default` (the last property ist not really necessary, since it is defined in the default property set)
     @property headertpl   - (optional) Header Tpl chunk (chunk name) to be inserted at the beginning of a new document.
     @property footertpl   - (optional) Footer Tpl chunk (chunk name) to be inserted at the end of a new document.
     @property tinyheight  - (optional) Height of richtext areas; default `400px`.
