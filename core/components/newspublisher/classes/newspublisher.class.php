@@ -1402,8 +1402,18 @@ class Newspublisher {
         }
         if ($response->isError()) {
             if ($response->hasFieldErrors()) {
-                $fieldErrors = $response->getAllErrors();
-                $errorMessage = implode("\n", $fieldErrors);
+                $fieldErrors = $response->getFieldErrors();
+                $errorMessage = $response->getMessage();
+                $show = explode(',', $this->props['show']);
+
+                foreach ($fieldErrors as $error) {
+                    $msg = $error->message;
+                    if (in_array($error->field, $this->fieldsToShow)) {
+                        $this->setFieldError($error->field, $msg);
+                    } else {
+                        $errorMessage .= "<br /><br />" . $msg . "<br />" . $this->_displayField($error->field);
+                    }
+                }
             } else {
                 $errorMessage = 'An error occurred: ' . $response->getMessage();
             }
