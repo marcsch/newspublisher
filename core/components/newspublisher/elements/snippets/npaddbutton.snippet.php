@@ -49,7 +49,7 @@ if ($caption != $defaultCaption && !$debug) return '';
 /* Create and return the form */
 $output = '<form action="' . $modx->makeUrl($np_id) . '" method="post" class="np_add_button_form">'
         . "\n" . '<input type = "hidden" name="'.$prop.'" value="'.$val.'" />'
-        . "\n" . '<input type="submit" class = "np_edit_this_button" name="submit" value="' . $caption . '"/>';
+        . "\n" . '<input type="submit" class = "np_add_button" name="submit" value="' . $caption . '"/>';
 
 $exclude = array('np_id', 'debug', 'caption', 'language');
 
