@@ -1407,7 +1407,12 @@ class Newspublisher {
                 $show = explode(',', $this->props['show']);
 
                 foreach ($fieldErrors as $error) {
+                    // omit uri field (may not be needed often)
+                    if ($error->field == 'uri') continue;
                     $msg = $error->message;
+                    if ($error->field == 'alias') {
+                        $msg = sprintf($this->modx->lexicon('np_duplicate_alias_msg'), $this->resource->getAliasPath($fields['alias']));
+                    }
                     if (in_array($error->field, $this->fieldsToShow)) {
                         $this->setFieldError($error->field, $msg);
                     } else {

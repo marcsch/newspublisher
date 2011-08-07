@@ -36,6 +36,7 @@ $_lang['np_error_presubmit'] = 'Sorry . . . There were one or more problems in p
 $_lang['np_error_submit'] = 'Sorry . . . There were one or more problems with your submission:';
 $_lang['np_error_required'] = 'The [[+name]] field is required.';
 $_lang['np_missing_field'] = 'Missing field: [[+name]].';
+$_lang['np_duplicate_alias_msg'] = "There already exists a resource with the URI '%s'. Please enter a unique alias (The document will have the URL: 'http://www.mysite.com/alias.html'):";
 $_lang['np_no_resource_group'] = 'Could not find resource group: ';
 $_lang['np_no_resource'] = 'Failed to get resource: ';
 $_lang['np_no_template_name'] = 'Failed to get template: [[+name]].';

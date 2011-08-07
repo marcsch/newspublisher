@@ -36,6 +36,7 @@ $_lang['np_error_presubmit'] = 'Entschuldigung . . .  Es gab (mindestens) ein Pr
 $_lang['np_error_submit'] = 'Entschuldigung . . .  Es gab (mindestens) ein Problem beim Erstellen der Ressource:';
 $_lang['np_error_required'] = 'Das Feld [[+name]] muss ausgefüllt werden.';
 $_lang['np_missing_field'] = 'Nicht ausgefüllt: [[+name]].';
+$_lang['np_duplicate_alias_msg'] = "Es existiert bereits ein Dokument mit dem URI '%s'. Bitte geben Sie ein eindeutiges Alias ein (Das Dokument wird dann unter der Adresse 'http://www.meineseite.com/alias.html' verfügbar sein):";
 $_lang['np_no_resource_group'] = 'Konnte Ressourcen-Gruppe nicht finden: ';
 $_lang['np_no_resource'] = 'Ressource nicht gefunden: ';
 $_lang['np_no_template_name'] = 'Template nicht gefunden: [[+name]].';
