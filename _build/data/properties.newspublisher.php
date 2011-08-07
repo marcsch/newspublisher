@@ -440,8 +440,8 @@ $properties = array(
         'name' => 'template',
         'desc' => 'np_template_desc',
         'type' => 'textfield',
-        'options' => 'System Default',
-        'value' => '',
+        'options' => '',
+        'value' => 'System Default',
         'lexicon' => 'newspublisher:properties',
     ),
     array(
