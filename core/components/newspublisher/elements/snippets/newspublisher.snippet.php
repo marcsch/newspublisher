@@ -43,8 +43,15 @@
                       (will be overridden by publish and unpublish dates).
                        Set to `parent` to match parent's pub status;
                        defaults to publish_default system setting.
+    @property showcancel  - set to 1 if the cancel button should be shown (otherwise 0). defaults to 1
+    @property showdelete  - set to 1 if the delete button should be shown (otherwise 0). defaults to 1.
+                       if the user does not have the permission to delete resources this setting will be ignored and
+                       the button will never be shown
     @property postid      - (optional) Document id to load on success; defaults to the page created or edited.
     @property cancelid    - (optional) Document id to load on cancel; defaults to http_referer.
+    @property deleteid    - (optional) Document id to load after a resource was deleted; defaults to the last page visited before
+                       the resource was displayed and/or edited. If there are mutiple NpEditThisButtons per page, the page will stay 
+                       the same by default
     @property badwords    - (optional) Comma delimited list of words not allowed in new document.
     @property template    - (optional) Name of template to use for new document; set to 'parent' to use parent's template;
                        for 'parent', &parent must be set; defaults to system default template.
@@ -112,7 +119,6 @@ $np = new Newspublisher($modx, $scriptProperties);
 $np->init($modx->context->get('key'));
 $np->getTpls();
 
-
 /* get error Tpl chunk */
 //$errorTpl = str_replace('[[+prefix]]', $np_prefix, $np->getTpl('errorTpl'));
 //$fieldErrorTpl = str_replace('[[+prefix]]', $np_prefix, $np->getTpl('fieldErrorTpl'));
@@ -120,14 +126,25 @@ $np->getTpls();
 $errorTpl =  $np->getTpl('errorTpl');
 $fieldErrorTpl = $np->getTpl('fieldErrorTpl');
 
-/* add Cancel button only if requested */
-if (!empty ($scriptProperties['cancelid'])) {
-    $cancelUrl = $modx->makeUrl($scriptProperties['cancelid'], '', '', 'full');
-} else {
-    $cancelUrl = isset($_SERVER['HTTP_REFERER'])
-            ? $_SERVER['HTTP_REFERER'] : $modx->resource->get('id');
+/* add all buttons */
+$buttons = '';
+$buttons .= '<input class="submit" type="submit" name="save" value="[[%np_submit]]" />';
+
+if ($showdelete != '0') {
+  if (!empty ($cancelid)) {
+      $cancelUrl = $modx->makeUrl($cancelid, '', '', 'full');
+  } else {
+      $cancelUrl = isset($_SERVER['HTTP_REFERER'])
+              ? $_SERVER['HTTP_REFERER']
+              : $modx->makeUrl($modx->resource->get('id'), '', '', 'full');
+  }
+  $buttons .= '<input type="button" class="cancel" name="cancel" value="[[%np_cancel]]" onclick="window.location = '."'" . $cancelUrl . "'".' " />';
 }
-$modx->toPlaceholder('cancel_url', $cancelUrl, $np_prefix);
+if ($showdelete != '0' && $np->getResourceId()) {
+  $buttons .= '<input type="submit" class="delete" name="delete" value="[[%np_delete]]" onclick="return confirm(\'[[%np_confirm_delete]]\');" />';
+}
+
+$modx->toPlaceholder('buttons', $buttons, 'npx');
 
 $errorHeaderPresubmit = $modx->lexicon('np_error_presubmit');
 $errorHeaderSubmit = $modx->lexicon('np_error_submit');
@@ -149,19 +166,18 @@ if (!empty($errors)) {
     $modx->toPlaceholder('errors_presubmit', $errorMessage, $np_prefix);
     return '<div class="newspublisher">' . $errorHeaderPresubmit . $errorMessage . '</div>';
 }
-// get postback status
-$isPostBack = $np->getPostBack();
 
-if ($isPostBack) {
+
+if (isset($_POST['save'])) {
     /* check for errors, validate, and save if no errors */
     $errors = $np->getErrors();
     if (!empty($errors)) {
-        $modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
-        foreach ($errors as $error) {
-            $errorMessage .= str_replace("[[+{$np_prefix} . '.error]]", $error, $errorTpl);
-        }
-        $modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
-        return ($formTpl);
+	$modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
+	foreach ($errors as $error) {
+	    $errorMessage .= str_replace("[[+{$np_prefix} . '.error]]", $error, $errorTpl);
+	}
+	$modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
+	return ($formTpl);
 
     }
 
@@ -169,36 +185,76 @@ if ($isPostBack) {
     $np->validate();
     $errors = $np->getErrors();
     if (!empty($errors)) {
-        foreach ($errors as $error) {
-            $errorMessage .= str_replace("[[+{$np_prefix}.error]]", $error, $errorTpl);
-        }
-        $modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
-        $modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
-        return $formTpl;
+	foreach ($errors as $error) {
+	    $errorMessage .= str_replace("[[+{$np_prefix}.error]]", $error, $errorTpl);
+	}
+	$modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
+	$modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
+	return $formTpl;
     }
 
     $docId = $np->saveResource(); /* returns ID of edited doc */
 
     /* if user has set postid, use it, otherwise use ID of the doc */
     $postId = empty($scriptProperties['postid']) ? $docId : $scriptProperties['postid']  ;
-    
+   
+    // $_SESSION['np_resource_id'] = $this->resource->get('id');
+    $goToUrl = $modx->makeUrl($postId);
 
-    /* handle save errors */
-    $errors = $np->getErrors();
+    if (! $np->getResourceId()) {
+    // TODO: Not sure how important clearing the cache is.
+    // Doesn't seem to be necessary in current MODx versions. 
+	/* clear cache on new resource 
+	$cacheManager = $modx->getCacheManager();
+	$cacheManager->clearCache(array (
+	    "{$this->resource->context_key}/",
+	),
+	array(
+	    'objects' => array('modResource', 'modContext', 'modTemplateVarResource'),
+	    'publishing' => true
+	    )
+	);*/
 
-    if (!empty($errors)) {
-        $modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
-        foreach ($errors as $error) {
-            $errorMessage .= str_replace("[[+{$np_prefix}.error]]", $error, $errorTpl);
-        }
-
-        $modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
-
-        return ($formTpl);
-    } else { /* successful save -- forward user */
-        $np->forward($postId);
+	/* ToDo: The next two lines can probably be removed once makeUrl() and sendRedirect() are updated */
+	$controller = $modx->getOption('request_controller',null,'index.php');
+	$goToUrl = $controller . '?id=' . $postId;
     }
+
+} else if (isset($_POST['delete'])) {
+
+    $np->deleteResource();
+
+    /* forward to deleteid given by user, or last page visited before   */
+    $goToUrl = $deleteid ? $deleteid : $_SESSION['np_deleted_redirect'];
+  
+    if (is_numeric($goToUrl)) { // id instead of url
+	$goToUrl = $modx->makeUrl($goToUrl, '', '', 'full');
+    }
+
+    if (empty($goToUrl)) {
+	// no http_referer in 'article view' and no 'deleteid' set -> display empty newspublisher page
+	$gotoUrl = $modx->makeUrl($modx->resource->get('id'), '', '', 'full');
+    }
+    
+      
 } else { /* just return the form */
     return $formTpl;
 }
-?>
+
+
+/* handle save / delete errors */
+$errors = $np->getErrors();
+
+if (!empty($errors)) {
+    $modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
+    foreach ($errors as $error) {
+	$errorMessage .= str_replace("[[+{$np_prefix}.error]]", $error, $errorTpl);
+    }
+
+    $modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
+
+    return ($formTpl);
+
+} else { /* successful save / delete -- forward user */
+    $modx->sendRedirect($goToUrl);
+}
