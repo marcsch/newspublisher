@@ -252,6 +252,9 @@ class Newspublisher {
             /* Array of fields to show in form */
             if (isset($_POST['show'])) $this->props['show'] = $_POST['show'];
             $this->fieldsToShow = explode(',', $this->props['show']);
+            foreach ($this->fieldsToShow as $field => $val) {
+                $this->fieldsToShow[$field] = trim($val);
+            }
             
             /* see if it's a repost */
             $this->setPostback(isset($_POST['hidSubmit']) && $_POST['hidSubmit'] == 'true');
