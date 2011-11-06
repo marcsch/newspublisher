@@ -173,12 +173,12 @@ if (isset($_POST['save'])) {
     /* check for errors, validate, and save if no errors */
     $errors = $np->getErrors();
     if (!empty($errors)) {
-        $modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
-        foreach ($errors as $error) {
-            $errorMessage .= str_replace("[[+{$np_prefix} . '.error]]", $error, $errorTpl);
-        }
-        $modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
-        return ($formTpl);
+	$modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
+	foreach ($errors as $error) {
+	    $errorMessage .= str_replace("[[+{$np_prefix} . '.error]]", $error, $errorTpl);
+	}
+	$modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
+	return ($formTpl);
 
     }
 
@@ -186,13 +186,17 @@ if (isset($_POST['save'])) {
     $np->validate();
     $errors = $np->getErrors();
     if (!empty($errors)) {
-        foreach ($errors as $error) {
-            $errorMessage .= str_replace("[[+{$np_prefix}.error]]", $error, $errorTpl);
-        }
-        $modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
-        $modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
-        return $formTpl;
+	foreach ($errors as $error) {
+	    $errorMessage .= str_replace("[[+{$np_prefix}.error]]", $error, $errorTpl);
+	}
+	$modx->toPlaceholder('errors_submit', $errorMessage, $np_prefix);
+	$modx->toPlaceholder('error_header', $errorHeaderSubmit, $np_prefix);
+	return $formTpl;
     }
+
+    /* if postid was specified in NpAddButton, do use this value
+     * This has to be done before saving, since $_POST is cleared then  */
+    if (!empty($_POST['postid'])) $postid = $_POST['postid'];
 
     $docId = $np->saveResource(); /* returns ID of edited doc */
 

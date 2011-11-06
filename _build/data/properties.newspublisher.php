@@ -82,9 +82,17 @@ $properties = array(
     array(
         'name' => 'cancelid',
         'desc' => 'np_cancelid_desc',
-        'type' => 'combo-boolean',
+        'type' => 'numberfield',
         'options' => '',
-        'value' => '0',
+        'value' => '',
+        'lexicon' => 'newspublisher:properties',
+    ),
+    array(
+        'name' => 'deleteid',
+        'desc' => 'np_deleteid_desc',
+        'type' => 'numberfield',
+        'options' => '',
+        'value' => '',
         'lexicon' => 'newspublisher:properties',
     ),
     array(
@@ -440,8 +448,8 @@ $properties = array(
         'name' => 'template',
         'desc' => 'np_template_desc',
         'type' => 'textfield',
-        'options' => 'System Default',
-        'value' => '',
+        'options' => '',
+        'value' => 'System Default',
         'lexicon' => 'newspublisher:properties',
     ),
     array(

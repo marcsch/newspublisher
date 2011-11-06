@@ -250,6 +250,7 @@ class Newspublisher {
 
 
             /* Array of fields to show in form */
+            if (isset($_POST['show'])) $this->props['show'] = $_POST['show'];
             $this->fieldsToShow = explode(',', $this->props['show']);
             
             /* see if it's a repost */
@@ -307,17 +308,6 @@ class Newspublisher {
                     $this->setError($this->modx->lexicon('np_create_permission_denied'));
                 }
                 $this->resource = $this->modx->newObject('modResource');
-                
-                /* get folder id and resource object where we should store articles
-                 * else store under current document */
-                // allow 'parent' parameter to be used as well as synonym for 'parentid'
-                if (!empty($this->props['parentid'])) $this->props['parent'] = $this->props['parentid'];
-                $parentId = !empty($this->props['parent']) ? intval($this->props['parent']):$this->modx->resource->get('id');
-                $this->parentObj = $this->modx->getObject('modResource',$parentId);
-                if (! $this->parentObj) {
-                    $this->setError('&amp;' .$this->modx->lexicon('np_no_parent'));
-                    return $retVal;
-                }
 
                 /* str_replace to prevent rendering of placeholders */
                 $fs = array();
@@ -328,20 +318,31 @@ class Newspublisher {
 
                 /* Set initial values for fields  */
                 $validFields = $this->modx->getFields('modResource');
-                $fieldValues = array_intersect_key(array_merge($this->props, $_POST),  $validFields);
+                $this->props = array_merge($this->props, $_POST);
+                $fieldValues = array_intersect_key($this->props,  $validFields);
 
-                if (!isset ($fieldValues['parent'])) $fieldValues['parent'] = $parentId;
+
+                /* get folder id and resource object where we should store articles
+                 * else store under current document */
+
+                // allow 'parent' parameter to be used as well as synonym for 'parentid'
+                if (!empty($fieldValues['parentid'])) $fieldValues['parent'] = $fieldValues['parentid'];
+                
+                $fieldValues['parent'] = !empty($fieldValues['parent']) ? intval($fieldValues['parent']) : $this->modx->resource->get('id');
+                $this->parentObj = $this->modx->getObject('modResource', $fieldValues['parent']);
+                if (! $this->parentObj) {
+                    $this->setError('&amp;' .$this->modx->lexicon('np_no_parent'));
+                    return $retVal;
+                }
+                
+                /* Other fields that have to be set correctly */
                 $fieldValues['createdby'] = $this->modx->user->get('id');
                 $fieldValues['context_key'] = $this->parentObj->get('context_key');
-
+                
+                /* Store all field values in the resource object */
                 foreach($fieldValues as $field => $value) {
                       $value = isset($_POST[$field]) ? $_POST[$field] : $this->_setDefault($field, $value);
                       $this->resource->set($field, $value);
-                      
-                      /* Make sure the value appears in $_POST */
-                      if (!in_array($field, $this->fieldsToShow)) {
-                          $stuff .= '<input type="hidden" name="' . $field . '" value="' . $value . '" />'. "\n";
-                      }
 
                 }
 
@@ -349,17 +350,30 @@ class Newspublisher {
                 if (! empty($this->props['groups'])) {
                     $this->groups = $this->_setGroups($this->props['groups']);
                 }
+                    
+                /* 'postid' always needs to be forwarded (for the case that it was specified in npAddButton) */
+                if (!empty($_POST['postid'])) {
+                    $stuff .= '<input type="hidden" name="postid" value="' . $_POST['postid'] . '" />'. "\n";
+                }
 
                 $this->header = !empty($this->props['headertpl']) ? $this->modx->getChunk($this->props['headertpl']) : '';
                 $this->footer = !empty($this->props['footertpl']) ? $this->modx->getChunk($this->props['footertpl']):'';
                 $this->aliasTitle = $this->props['aliastitle']? true : false;
-                $this->clearcache = isset($_POST['clearcache'])? $_POST['clearcache'] : $this->props['clearcache'] ? true: false;
+                $this->clearcache = $this->props['clearcache'] ? true: false;
                 $this->intMaxlength = !empty($this->props['intmaxlength'])? $this->props['intmaxlength'] : 10;
                 $this->textMaxlength = !empty($this->props['textmaxlength'])? $this->props['textmaxlength'] : 60;
 
             } /* end new document */
             
 
+            /* Forward any property defined in $_POST (using npAddButton), and values of fields
+             * that are not shown.
+             */
+            foreach($_POST as $prop => $value) {
+                if (!in_array($prop, $this->fieldsToShow && $prop != 'submit')) {
+                    $stuff .= '<input type="hidden" name="' . $prop . '" value="' . $value . '" />'. "\n";
+                }
+            }
             $this->modx->toPlaceholder('post_stuff',$stuff,$this->prefix);
 
             if ($this->isPostBack) {
@@ -486,6 +500,7 @@ class Newspublisher {
                } /* end if ($whichEditor == 'TinyMCE') */
 
            } /* end if ($richtext) */
+
 
         } /* end init */
 
@@ -691,9 +706,12 @@ class Newspublisher {
         switch ($field) {
             case 'content':
                 $type = $this->resource->get('class_key');
+
                 if ($type == 'modSymLink' || $type == 'modWebLink') {
-                    $replace['[[+npx.caption]]'] = '[[%weblink]]';
-                    $replace['[[+npx.help]]'] = '[[%weblink_help]]';
+                    $type = strtolower(substr($type, 3));
+                    $replace['[[+npx.caption]]'] = $this->modx->lexicon($type);
+                    $replace['[[+npx.help]]'] = $this->modx->lexicon($type.'_help');
+
                     $inner .= $this->_processSimple($field, $replace, 'textTpl');
                 } else {
                     $inner .= $this->_processTextarea($field, $replace, $this->props['rtcontent'], 'np-content');
@@ -1395,8 +1413,23 @@ class Newspublisher {
         }
         if ($response->isError()) {
             if ($response->hasFieldErrors()) {
-                $fieldErrors = $response->getAllErrors();
-                $errorMessage = implode("\n", $fieldErrors);
+                $fieldErrors = $response->getFieldErrors();
+                $errorMessage = $response->getMessage();
+                $show = explode(',', $this->props['show']);
+
+                foreach ($fieldErrors as $error) {
+                    // omit uri field (may not be needed often)
+                    if ($error->field == 'uri') continue;
+                    $msg = $error->message;
+                    if ($error->field == 'alias') {
+                        $msg = sprintf($this->modx->lexicon('np_duplicate_alias_msg'), $this->resource->getAliasPath($fields['alias']));
+                    }
+                    if (in_array($error->field, $this->fieldsToShow)) {
+                        $this->setFieldError($error->field, $msg);
+                    } else {
+                        $errorMessage .= "<br /><br />" . $msg . "<br />" . $this->_displayField($error->field);
+                    }
+                }
             } else {
                 $errorMessage = 'An error occurred: ' . $response->getMessage();
             }
@@ -1567,7 +1600,7 @@ class Newspublisher {
 
                     /* set error for header */
                     $msg = $this->modx->lexicon('np_missing_field');
-                    $msg = str_replace('[[+name]]', $field, $msg);
+                    $msg = str_replace('[[+name]]', $this->_getCaption($field), $msg);
                     $this->setError($msg);
 
                 }
@@ -1593,6 +1626,33 @@ class Newspublisher {
         return $success;
     }
 
+
+    protected function _getCaption($field_or_tv) {
+      
+        $resourceFieldNames = array_keys($this->modx->getFields('modResource'));
+        
+        if (in_array($field_or_tv, $resourceFieldNames)) {
+            $type = $this->resource->get('class_key');
+            switch ($type) {
+                case 'modSymLink':
+                    $caption = '[[%symlink]]';
+                    break;
+                case 'modWebLink':
+                    $caption = '[[%weblink]]';
+                    break;
+                default:
+                    $caption = '[[%resource_' . $field_or_tv . ']]';
+            }
+        } else {
+            $tv = $this->modx->getObject('modTemplateVar',array('name' => $field_or_tv));
+            if (!isset($tv)) return '';
+            $caption = $tv->get('caption');
+            if (empty($caption)) $caption = $tv->get('name');
+        }
+        return $caption;
+    }
+
+
 /** Sets placeholder for field error messages
  * @param (string) $fieldName - name of field
  * @param (string) $msg - lexicon error message string
@@ -1600,7 +1660,7 @@ class Newspublisher {
  */
     /* ToDo: Change [[+name]] to [[+npx.something]]?, or ditch it (or not)*/
     public function setFieldError($fieldName, $msg) {
-        $msg = str_replace('[[+name]]', $fieldName, $msg);
+        $msg = str_replace('[[+name]]', $this->_getCaption($fieldName), $msg);
         $msg = str_replace("[[+{$this->prefix}.error]]", $msg, $this->tpls['fieldErrorTpl']);
         $ph = 'error_' . $fieldName;
         $this->modx->toPlaceholder($ph, $msg, $this->prefix);
