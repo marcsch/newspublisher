@@ -20,7 +20,7 @@
 <link rel="stylesheet" type="text/css" href="templates/{$_config.manager_theme}/css/ie.css" />
 <![endif]-->
 </head>
-<body style="overflow:hidden">
+<body>
 
 {literal}
 <script type="text/javascript">
@@ -28,11 +28,8 @@ Ext.onReady(function() {
     Ext.QuickTips.init();
     Ext.BLANK_IMAGE_URL = MODx.config.manager_url+'assets/ext3/resources/images/default/s.gif';
     browser = MODx.load({
-        xtype: 'modx-browser'
-        ,width: '100%'
-        ,height: 695
+        xtype: 'modx-browser-np'
         ,hideFiles: true
-        ,value: window.opener.browserPathInput.value || ''
         ,wctx: '{/literal}{$wctx}{literal}' || 'web'
         ,basePath: '{/literal}{$basePath}{literal}' || ''
         ,basePathRelative: '{/literal}{$basePathRelative}{literal}' || ''
@@ -40,6 +37,9 @@ Ext.onReady(function() {
         ,baseUrlRelative: '{/literal}{$baseUrlRelative}{literal}' || ''
         ,allowedFileTypes: '{/literal}{$allowedFileTypes}{literal}' || ''
         ,openTo: '{/literal}{$openTo}{literal}' || ''
+        ,listeners: {
+            'hide': {fn:function() { window.close(); },scope:this}
+        }
         ,onSelect: function(data) {
             // add file url to text field
             window.opener.browserPathInput.value = data.relativeUrl;
