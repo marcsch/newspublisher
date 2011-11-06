@@ -195,13 +195,17 @@ if (isset($_POST['save'])) {
 	return $formTpl;
     }
 
+    /* if postid was specified in NpAddButton, do use this value
+     * This has to be done before saving, since $_POST is cleared then  */
+    if (!empty($_POST['postid'])) $postid = $_POST['postid'];
+
     $docId = $np->saveResource(); /* returns ID of edited doc */
 
     /* if user has set postid, use it, otherwise use ID of the doc */
-    $postId = empty($scriptProperties['postid']) ? $docId : $scriptProperties['postid']  ;
+    $postid = empty($postid) ? $docId : $postid;
    
     // $_SESSION['np_resource_id'] = $this->resource->get('id');
-    $goToUrl = $modx->makeUrl($postId);
+    $goToUrl = $modx->makeUrl($postid);
 
     if (! $np->getResourceId()) {
     // TODO: Not sure how important clearing the cache is.

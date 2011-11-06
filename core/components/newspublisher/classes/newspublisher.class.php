@@ -343,18 +343,17 @@ class Newspublisher {
                 foreach($fieldValues as $field => $value) {
                       $value = isset($_POST[$field]) ? $_POST[$field] : $this->_setDefault($field, $value);
                       $this->resource->set($field, $value);
-                      
-                      /* Make sure the value appears in $_POST */
-                      if (!in_array($field, $this->fieldsToShow)) {
-                          $stuff .= '<input type="hidden" name="' . $field . '" value="' . $value . '" />'. "\n";
-                      }
 
                 }
-
 
                   /* Get resource groups (JSON encoded array) if 'groups' parameter was set */
                 if (! empty($this->props['groups'])) {
                     $this->groups = $this->_setGroups($this->props['groups']);
+                }
+                    
+                /* 'postid' always needs to be forwarded (for the case that it was specified in npAddButton) */
+                if (!empty($_POST['postid'])) {
+                    $stuff .= '<input type="hidden" name="postid" value="' . $_POST['postid'] . '" />'. "\n";
                 }
 
                 $this->header = !empty($this->props['headertpl']) ? $this->modx->getChunk($this->props['headertpl']) : '';
@@ -367,6 +366,14 @@ class Newspublisher {
             } /* end new document */
             
 
+            /* Forward any property defined in $_POST (using npAddButton), and values of fields
+             * that are not shown.
+             */
+            foreach($_POST as $prop => $value) {
+                if (!in_array($prop, $this->fieldsToShow && $prop != 'submit')) {
+                    $stuff .= '<input type="hidden" name="' . $prop . '" value="' . $value . '" />'. "\n";
+                }
+            }
             $this->modx->toPlaceholder('post_stuff',$stuff,$this->prefix);
 
             if ($this->isPostBack) {
