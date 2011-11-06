@@ -66,7 +66,14 @@ $properties = array(
         'value' => '',
         'lexicon' => 'newspublisher:button',
     ),
-
+    array(
+        'name' => 'showdelete',
+        'desc' => 'show_delete_desc',
+        'type' => 'combo-boolean',
+        'options' => '',
+        'value' => '1',
+        'lexicon' => 'newspublisher:button',
+    ),
 );
 
 return $properties;

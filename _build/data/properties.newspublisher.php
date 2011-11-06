@@ -88,6 +88,14 @@ $properties = array(
         'lexicon' => 'newspublisher:properties',
     ),
     array(
+        'name' => 'deleteid',
+        'desc' => 'np_deleteid_desc',
+        'type' => 'numberfield',
+        'options' => '',
+        'value' => '',
+        'lexicon' => 'newspublisher:properties',
+    ),
+    array(
         'name' => 'clearcache',
         'desc' => 'np_clearcache_desc',
         'type' => 'combo-boolean',
@@ -467,6 +475,14 @@ $properties = array(
         'options' => '',
         'value' => '1',
         'lexicon' => 'newspublisher:properties',
+    ),
+    array(
+        'name' => 'showdelete',
+        'desc' => 'show_delete_desc',
+        'type' => 'combo-boolean',
+        'options' => '',
+        'value' => '1',
+        'lexicon' => 'newspublisher:button',
     ),
 );
 
