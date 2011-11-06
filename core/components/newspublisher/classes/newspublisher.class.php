@@ -370,7 +370,7 @@ class Newspublisher {
              * that are not shown.
              */
             foreach($_POST as $prop => $value) {
-                if (!in_array($prop, $this->fieldsToShow && $prop != 'submit')) {
+                if (!in_array($prop, $this->fieldsToShow) && $prop != 'submit') {
                     $stuff .= '<input type="hidden" name="' . $prop . '" value="' . $value . '" />'. "\n";
                 }
             }
