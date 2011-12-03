@@ -359,6 +359,7 @@ class Newspublisher {
                     $stuff .= '<input type="hidden" name="postid" value="' . $_POST['postid'] . '" />'. "\n";
                 }
 
+
                 $this->header = !empty($this->props['headertpl']) ? $this->modx->getChunk($this->props['headertpl']) : '';
                 $this->footer = !empty($this->props['footertpl']) ? $this->modx->getChunk($this->props['footertpl']):'';
                 $this->aliasTitle = $this->props['aliastitle']? true : false;
@@ -703,6 +704,7 @@ class Newspublisher {
                         $options[$template->get('templatename')] = $template->get('id');
                     }
                 }
+
                 $inner .= $this->_displayList($field, 'listbox', $options, array($this->resource->get('template')), true);
                 break;
 
