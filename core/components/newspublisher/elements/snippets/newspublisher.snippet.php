@@ -41,7 +41,7 @@
     @property required    - (optional) Comma-separated list of fields/tvs to require; defaults to 'pagetitle,content'.
     @property published   - (optional) Set new resource as published or not
                       (will be overridden by publish and unpublish dates).
-                       Set to `parent` to match parent's pub status;
+                       Set to `Parent` to match parent's pub status;
                        defaults to publish_default system setting.
     @property showdelete  - set to 1 if the delete button should be shown (otherwise 0). defaults to 1.
                        if the user does not have the permission to delete resources this setting will be ignored and
@@ -52,13 +52,14 @@
                        the resource was displayed and/or edited. If there are mutiple NpEditThisButtons per page, the page will stay 
                        the same by default
     @property badwords    - (optional) Comma delimited list of words not allowed in new document.
-    @property template    - (optional) Name of template to use for new document; set to 'parent' to use parent's template;
+    @property template    - (optional) Name of template to use for new document; set to 'Parent' to use parent's template;
                        defaults to system default template.
     @property ...         - (optional) Any resource field can have a default value.
-                       Set to 'parent' to use parent's value for this field;
+                       Set to 'Parent' to use parent's value for this field;
                        Set to 'System Default' in order to use the default system setting (only if available).
                        The following fields have a default system setting:  published, template, hidemenu, cacheable, searchable, richtext
-                       examples: &publishedon=`2011-04-01 20:11` &template=`parent` &searchable=`System Default` (the last property ist not really necessary, since it is defined in the default property set)
+                       examples: &publishedon=`2011-04-01 20:11` &template=`Parent` &searchable=`System Default` (the last property ist not really necessary, since it is defined in the default property set)
+
     @property headertpl   - (optional) Header Tpl chunk (chunk name) to be inserted at the beginning of a new document.
     @property footertpl   - (optional) Footer Tpl chunk (chunk name) to be inserted at the end of a new document.
     @property tinyheight  - (optional) Height of richtext areas; default `400px`.
@@ -93,7 +94,7 @@
     @property errortpl    - (optional) Name of Tpl chunk for formatting errors in the header. Must contain [[+np.error]] placeholder.
     @property fielderrortpl (optional) Name of Tpl chunk for formatting field errors. Must contain [[+np.error]] placeholder.
     @property groups      - (optional) Resource groups to put new document in (no effect with existing docs);
-                       set to 'parent' to use parent's groups.
+                       set to 'Parent' to use parent's groups.
     @property language    - (optional) Language to use in forms and error messages.
     @property prefix      - (optional) Prefix to use for placeholders; defaults to 'np'
     @property fielderrortpl - (optional)
