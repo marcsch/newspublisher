@@ -69,8 +69,13 @@ $_lang['np_no_evals_input'] = 'Cannot use @EVAL bindings in the front end.';
 $_lang['np_no_modx_tags'] = 'You do not have permission to edit resources containing modx tags.';
 $_lang['np_no_rte'] = 'The &amp;initrte parameter is not set, but you asked for this richtext field: ';
 $_lang['np_no_datepicker'] = 'The &amp;initdatepicker parameter is not set, but you asked for this date field: ';
-$_lang['np_launch_image_browser'] = 'select/upload';
-$_lang['np_launch_file_browser'] = 'select/upload';
+$_lang['np_launch_image_browser'] = 'Select an image';
+$_lang['np_launch_file_browser'] = 'Select a file';
+$_lang['np_no_action_found'] = 'The newspublisher/filebrowser action could not be found. You may have deleted it accidentally. Please reinstall newspublisher.';
+$_lang['np_media_source_access_denied'] = "The current user doesn't have the permission to access the media source associated with the TV: ";
+$_lang['np_source_error'] = 'No media source is associated with the TV: ';
+$_lang['np_source_wctx_error'] = 'The working context of the media source could not be retrieved for the TV: ';
+
 
 /* missing resource field lexicon strings */
 $_lang['resource_pub_date'] =  'Publish Date';

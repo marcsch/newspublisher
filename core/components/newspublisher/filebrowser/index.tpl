@@ -43,11 +43,8 @@ Ext.onReady(function() {
         'HTTP_MODAUTH': '{/literal}{$site_id}{literal}'
     };
     browser = MODx.load({
-        xtype: 'modx-browser'
-        ,width: '100%'
-        ,height: 695
+        xtype: 'modx-browser-np'
         ,hideFiles: true
-        ,value: window.opener.browserPathInput.value || ''
         ,wctx: '{/literal}{$wctx}{literal}' || 'web'
         ,basePath: '{/literal}{$basePath}{literal}' || ''
         ,basePathRelative: '{/literal}{$basePathRelative}{literal}' || ''

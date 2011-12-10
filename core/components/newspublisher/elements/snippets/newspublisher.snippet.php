@@ -29,24 +29,24 @@
  * /
 
 /*
-  @version Version 1.2.0-rc2
+  @version Version 1.3.0-rc1
   Modified: July 10, 2011
 
    NOTE: You may need the latest version of TinyMCE for rich text editing.
 
   Properties:
-    @property parent      - (optional) Folder id where new documents are stored; defaults to NewsPublisher folder.
+    @property parentid      - (optional) Folder id where new documents are stored; defaults to NewsPublisher folder.
     @property show        - (optional) Comma separated list of fields/tvs to show (shown in order).
                      defaults to 'pagetitle,longtitle,description,menutitle,pub_date,unpub_date,introtext,content'.
     @property required    - (optional) Comma-separated list of fields/tvs to require; defaults to 'pagetitle,content'.
     @property published   - (optional) Set new resource as published or not
                       (will be overridden by publish and unpublish dates).
-                       Set to `parent` to match parent's pub status;
+                       Set to `Parent` to match parent's pub status;
                        defaults to publish_default system setting.
     @property postid      - (optional) Document id to load on success; defaults to the page created or edited.
     @property cancelid    - (optional) Document id to load on cancel; defaults to http_referer.
     @property badwords    - (optional) Comma delimited list of words not allowed in new document.
-    @property template    - (optional) Name of template to use for new document; set to 'parent' to use parent's template;
+    @property template    - (optional) Name of template to use for new document; set to 'Parent' to use parent's template;
                        for 'parent', &parent must be set; defaults to system default template.
     @property headertpl   - (optional) Header Tpl chunk (chunk name) to be inserted at the beginning of a new document.
     @property footertpl   - (optional) Footer Tpl chunk (chunk name) to be inserted at the end of a new document.
@@ -82,7 +82,7 @@
     @property errortpl    - (optional) Name of Tpl chunk for formatting errors in the header. Must contain [[+np.error]] placeholder.
     @property fielderrortpl (optional) Name of Tpl chunk for formatting field errors. Must contain [[+np.error]] placeholder.
     @property groups      - (optional) Resource groups to put new document in (no effect with existing docs);
-                       set to 'parent' to use parent's groups.
+                       set to 'Parent' to use parent's groups.
     @property language    - (optional) Language to use in forms and error messages.
     @property prefix      - (optional) Prefix to use for placeholders; defaults to 'np'
     @property fielderrortpl - (optional)
@@ -107,15 +107,13 @@ $np_prefix = $scriptProperties['prefix'];
 /* create and initialize newspublisher object */
 $np = new Newspublisher($modx, $scriptProperties);
 $np->init($modx->context->get('key'));
-$np->getTpls();
-
 
 /* get error Tpl chunk */
 //$errorTpl = str_replace('[[+prefix]]', $np_prefix, $np->getTpl('errorTpl'));
 //$fieldErrorTpl = str_replace('[[+prefix]]', $np_prefix, $np->getTpl('fieldErrorTpl'));
 
-$errorTpl =  $np->getTpl('errorTpl');
-$fieldErrorTpl = $np->getTpl('fieldErrorTpl');
+$errorTpl =  $np->getTpl('ErrorTpl');
+$fieldErrorTpl = $np->getTpl('FieldErrorTpl');
 
 /* add Cancel button only if requested */
 if (!empty ($scriptProperties['cancelid'])) {
