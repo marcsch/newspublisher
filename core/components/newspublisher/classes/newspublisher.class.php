@@ -425,10 +425,16 @@ class Newspublisher {
     protected function _parseDefaults($defaultString) {
 
         $defaults = array();
+        /* Split the string by commas if they are not escaped. See also
+         * http://stackoverflow.com/questions/6243778/split-string-by-delimiter-but-not-if-it-is-escaped/  */
+        $fields = preg_split('~\\\\.(*SKIP)(*FAIL)|,~s', $defaultString);
         
-        foreach (explode(',', $defaultString) as $i => $field_str) {
+        foreach ($fields as $i => $field_str) {
 
             list($key, $value) = array_map('trim', explode(':', $field_str, 2));
+
+            // remove eventual backslashes before commas
+            $value = str_replace('\\,', ',', $value); 
             
             if ($value == 'Yes') $value = '1';
             else if ($value == 'No') $value = '0';
