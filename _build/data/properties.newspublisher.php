@@ -51,35 +51,6 @@ $properties = array(
         'lexicon' => 'newspublisher:properties',
     ),
     array(
-        'name' => 'cacheable',
-        'desc' => 'np_cacheable_desc',
-        'type' => 'list',
-        'options' => array(
-            array(
-                'name' => 'System Default',
-                'value' => 'System Default',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Yes',
-                'value' => 'Yes',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'No',
-                'value' => 'No',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Parent',
-                'value' => 'Parent',
-                'menu' => '',
-            ),
-        ),
-        'value' => 'System Default',
-        'lexicon' => 'newspublisher:properties',
-    ),
-    array(
         'name' => 'cancelid',
         'desc' => 'np_cancelid_desc',
         'type' => 'combo-boolean',
@@ -165,35 +136,6 @@ $properties = array(
         'type' => 'textfield',
         'options' => '',
         'value' => '',
-        'lexicon' => 'newspublisher:properties',
-    ),
-    array(
-        'name' => 'hidemenu',
-        'desc' => 'np_hidemenu_desc',
-        'type' => 'list',
-        'options' => array(
-            array(
-                'name' => 'System Default',
-                'value' => 'System Default',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Yes',
-                'value' => 'Yes',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'No',
-                'value' => 'No',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Parent',
-                'value' => 'Parent',
-                'menu' => '',
-            ),
-        ),
-        'value' => 'System Default',
         'lexicon' => 'newspublisher:properties',
     ),
     array(
@@ -301,70 +243,12 @@ $properties = array(
         'lexicon' => 'newspublisher:properties',
     ),
     array(
-        'name' => 'published',
-        'desc' => 'np_published_desc',
-        'type' => 'list',
-        'options' => array(
-            array(
-                'name' => 'System Default',
-                'value' => 'System Default',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Yes',
-                'value' => 'Yes',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'No',
-                'value' => 'No',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Parent',
-                'value' => 'Parent',
-                'menu' => '',
-            ),
-        ),
-        'value' => 'System Default',
-        'lexicon' => 'newspublisher:properties',
-    ),
-    array(
         'name' => 'required',
         'desc' => 'np_required_desc',
         'type' => 'textfield',
         'options' => '',
         'value' => 'pagetitle,content',
         'lexicon' => 'newspublisher:properties',
-    ),
-    array(
-        'name' => 'richtext',
-        'desc' => 'np_richtext_desc',
-        'type' => 'list',
-        'options' => array(
-            array(
-                'name' => 'System Default',
-                'value' => 'System Default',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Yes',
-                'value' => 'Yes',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'No',
-                'value' => 'No',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Parent',
-                'value' => 'Parent',
-                'menu' => '',
-            ),
-        ),
-        'value' => 'System Default',
-        'lexicon' => 'newpublisher:properties',
     ),
     array(
         'name' => 'rtcontent',
@@ -383,35 +267,6 @@ $properties = array(
         'lexicon' => 'newspublisher:properties',
     ),
     array(
-        'name' => 'searchable',
-        'desc' => 'np_searchable_desc',
-        'type' => 'list',
-        'options' => array(
-            array(
-                'name' => 'System Default',
-                'value' => 'System Default',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Yes',
-                'value' => 'Yes',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'No',
-                'value' => 'No',
-                'menu' => '',
-            ),
-            array(
-                'name' => 'Parent',
-                'value' => 'Parent',
-                'menu' => '',
-            ),
-        ),
-        'value' => 'System Default',
-        'lexicon' => 'newspublisher:properties',
-    ),
-    array(
         'name' => 'show',
         'desc' => 'np_show_desc',
         'type' => 'textfield',
@@ -427,15 +282,14 @@ $properties = array(
         'value' => '',
         'lexicon' => 'newspublisher:properties',
     ),
-    
     array(
-        'name' => 'template',
-        'desc' => 'np_template_desc',
+        'name' => 'defaults',
+        'desc' => 'np_defaults_desc',
         'type' => 'textfield',
         'options' => '',
         'value' => '',
         'lexicon' => 'newspublisher:properties',
-    ),
+    ),    
     array(
         'name' => 'texttpl',
         'desc' => 'np_texttpl_desc',

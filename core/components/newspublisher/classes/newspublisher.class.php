@@ -51,6 +51,10 @@ class Newspublisher {
      */
     protected $context;
     /**
+     * @var object current modContext
+     */
+    protected $workingContext;
+    /**
      * @var array scriptProperties array
      */
     protected $props;
@@ -82,6 +86,10 @@ class Newspublisher {
      * @var boolean Indicates a repost to self
      */
     protected $isPostBack;
+    /**
+     * @var array Holds inital values of Fields/TVs which are used if a new resource is created
+     */
+    protected $defaults;
     /**
      * @var string Path to NewsPublisher Core
      */
@@ -127,33 +135,9 @@ class Newspublisher {
      */
     protected $badwords;
     /**
-     * @var string Value for published resource field
-     */
-    protected $published;
-    /**
-     * @var string Value for hidemenu resource field
-     */
-    protected $hideMenu;
-    /**
      * @var string Value for alias resource field
      */
     protected $alias;
-    /**
-     * @var string Value for cacheable resource field
-     */
-    protected $cacheable;
-    /**
-     * @var string Value for searchable resource field
-     */
-    protected $searchable;
-    /**
-     * @var string Value for template resource field
-     */
-    protected $template;
-    /**
-     * @var string Value for richtext resource field
-     */
-    protected $richtext;
     /**
      * @var array Array of Tpl chunk contents
      */
@@ -171,6 +155,7 @@ class Newspublisher {
      * @var int Max length for text input fields
      */
     protected $textMaxlength;
+
 
     /** NewsPublisher constructor
      *
@@ -218,6 +203,7 @@ class Newspublisher {
 
         public function init($context) {
             $this->context = $context;
+            $this->workingContext = $this->modx->getContext($this->context);
             
             $language = !empty($this->props['language'])
                     ? $this->props['language']
@@ -257,19 +243,14 @@ class Newspublisher {
             $this->setPostback(isset($_POST['hidSubmit']) && $_POST['hidSubmit'] == 'true');
 
             if ($this->isPostBack) {
-                $fs = array();
+                /* Don't use arrays for HTML select/radio fields with a single element.
+                 * The nested arrays cause problems when saving fields */
                 foreach($_POST as $k => $v) {
-                    /* Don't use arrays for HTML select/radio fields with a single element.
-                     * The nested arrays cause problems when saving fields */
                     if (is_array($v) && count($v)==1) $_POST[$k] = reset($v);
-                    
-                    /* str_replace to prevent rendering of placeholders */
-                    $fs[$k] = str_replace(array('[',']'),array('&#91;','&#93;'),$v);
                 }
-                $this->modx->toPlaceholders($fs,$this->prefix);
             }
 
-            if($this->existing) {
+            if ($this->existing) {
 
                 $this->resource = $this->modx->getObject('modResource', $this->existing);
                 if ($this->resource) {
@@ -277,25 +258,14 @@ class Newspublisher {
                     if (!$this->modx->hasPermission('view_document') || !$this->resource->checkPolicy('view') ) {
                         $this->setError($this->modx->lexicon('np_view_permission_denied'));
                     }
-                    if (! $this->isPostBack) {
-                        $ph = $this->resource->toArray();
-                        $fs = array();
-                        foreach($ph as $k=>$v) {
-                            if (strstr($v, '[[') && ! $this->modx->hasPermission('allow_modx_tags')) {
-                                $this->setError($this->modx->lexicon('np_no_modx_tags'));
-                                return;
-                            }
-                            $fs[$k] = str_replace(array('[',']'),array('&#91;','&#93;'),$v);
-                        }
-                        $ph = $fs;
-                        $this->modx->toPlaceholders($ph,$this->prefix);
-                        unset($ph);
-                    }
+                    
                 } else {
                    $this->setError($this->modx->lexicon('np_no_resource') . $this->existing);
                    return;
-
                 }
+
+                $this->template = isset($_POST['template']) ? $_POST['template'] : $this->resource->get('template');
+                
                 /* need to forward this from $_POST so we know it's an existing doc */
                 $stuff = '<input type="hidden" name="np_existing" value="true" />' . "\n" .
                 '<input type="hidden" name="np_doc_id" value="' . $this->resource->get('id') . '" />';
@@ -309,32 +279,45 @@ class Newspublisher {
                 $this->resource = $this->modx->newObject('modResource');
                 /* get folder id where we should store articles
                  else store under current document */
-                 $this->parentId = !empty($this->props['parentid']) ? intval($this->props['parentid']):$this->modx->resource->get('id');
+                $this->parentId = !empty($this->props['parentid']) ? intval($this->props['parentid']):$this->modx->resource->get('id');
+                $this->parentObj = $this->modx->getObject('modResource',$this->parentId);
+                if (! $this->parentObj) {
+                    $this->setError('&amp;' .$this->modx->lexicon('np_no_parent'));
+                    return;
+                }
 
-                 $this->aliasTitle = $this->props['aliastitle']? true : false;
-                 $this->clearcache = isset($_POST['clearcache'])? $_POST['clearcache'] : $this->props['clearcache'] ? true: false;
+                /* these fields need to be set in new docs
+                 * TODO: not sure where the default system settings should be set. They are only needed if a field is displayed,
+                 * otherwise they will be set by the resource/create processor  */
+                $this->defaults = array(
+                    'editedon'    => '0',
+                    'editedby'    => '0',
+                    'parent'      => $this->parentId,
+                    'createdby'   => $this->modx->user->get('id'),
+                    'context_key' => $this->parentObj->get('context_key'),
+                    'template'    => (integer) $this->workingContext->getOption('default_template', 0),
+                    'hidemenu'    => (integer) $this->workingContext->getOption('hidemenu_default', 0),
+                    'richtext'    => (integer) $this->workingContext->getOption('richtext_default', 1),
+                    'published'   => (integer) $this->workingContext->getOption('publish_default', 0),
+                    'cacheable'   => (integer) $this->workingContext->getOption('cache_default', 1),
+                    'searchable'  => (integer) $this->workingContext->getOption('search_default', 1)
+                );
+                
+                /* get the default values (if set) */
+                if (isset($this->props['defaults'])) 
+                    $this->defaults = array_merge($this->defaults, $this->_parseDefaults($this->props['defaults']));
 
-                 $this->hideMenu = isset($_POST['hidemenu'])? $_POST['hidemenu'] : $this->_setDefault('hidemenu',$this->parentId);
-                 $this->resource->set('hidemenu', $this->hideMenu);
+                $this->template = $this->defaults['template'];
 
-                 $this->cacheable = isset($_POST['cacheable'])? $_POST['cacheable'] : $this->_setDefault('cacheable',$this->parentId);
-                 $this->resource->set('cacheable', $this->cacheable);
+                $this->aliasTitle = $this->props['aliastitle']? true : false;
+                $this->clearcache = isset($_POST['clearcache'])? $_POST['clearcache'] : $this->props['clearcache'] ? true: false;
 
-                 $this->searchable = isset($_POST['searchable'])? $_POST['searchable'] : $this->_setDefault('searchable',$this->parentId);
-                 $this->resource->set('searchable', $this->searchable);
-
-                 $this->published = isset($_POST['published'])? $_POST['published'] : $this->_setDefault('published',$this->parentId);
-                 $this->resource->set('published', $this->published);
-
-                 $this->richtext = isset($_POST['richtext'])? $_POST['richtext'] : $this->_setDefault('richtext',$this->parentId);
-                 $this->resource->set('richtext', $this->richtext);
-
-                 if (! empty($this->props['groups'])) {
-                    $this->groups = $this->_setDefault('groups',$this->parentId);
-                 }
-                 $this->header = !empty($this->props['headertpl']) ? $this->modx->getChunk($this->props['headertpl']) : '';
-                 $this->footer = !empty($this->props['footertpl']) ? $this->modx->getChunk($this->props['footertpl']):'';
-
+                if (! empty($this->props['groups'])) {
+                   $this->groups = $this->_setGroups($this->props['groups']);
+                }
+                 
+                $this->header = !empty($this->props['headertpl']) ? $this->modx->getChunk($this->props['headertpl']) : '';
+                $this->footer = !empty($this->props['footertpl']) ? $this->modx->getChunk($this->props['footertpl']):'';
 
             }
 
@@ -344,7 +327,7 @@ class Newspublisher {
              }
 
            $this->modx->lexicon->load('core:resource');
-           $this->template = $this->_getTemplate();
+
            if($this->props['initdatepicker']) {
                 $this->modx->regClientCSS($this->assetsUrl . 'datepicker/css/datepicker.css');
                 $this->modx->regClientStartupHTMLBlock('<script type=text/javascript src="' . $this->assetsUrl . 'datepicker/js/datepicker.packed.js">{"lang":"' . $language . '"}</script>');
@@ -429,91 +412,43 @@ class Newspublisher {
 
         } /* end init */
 
-    /** Sets default values for published, hidemenu, searchable,
-     * cacheable, and groups (if sent).
-     *
+
+
+    /** Parses a string of default values which are set in new resources in the form 'field_or_tv:value'
+     *  If the value is set to 'Parent' value of the corresponding field/TV is retrieved from the
+     *  parent resource
      * @access protected
-     *
-     * @param (string) $field - name of resource field
-     * @param (int) $parentId - ID of parent resource
-     *
-     * @return (mixed) returns boolean option, JSON string for
-     * groups, and null on failure
+     * @param (string) $defaultString
+     * @return (array) returns an associative array of fields/TVs and their values
      */
 
-    protected function _setDefault($field,$parentId) {
+    protected function _parseDefaults($defaultString) {
 
-        $retVal = null;
-        $prop = $this->props[$field];
-        if ($prop == 'Parent' || $prop == 'parent') {
-            /* get parent if we don't already have it */
-            if (! $this->parentObj) {
-                $this->parentObj = $this->modx->getObject('modResource',$this->parentId);
+        $defaults = array();
+        
+        foreach (explode(',', $defaultString) as $i => $field_str) {
+
+            list($key, $value) = array_map('trim', explode(':', $field_str, 2));
+            
+            if ($value == 'Yes') $value = '1';
+            else if ($value == 'No') $value = '0';
+
+            switch ($value) {
+                case 'parent':
+                case 'Parent':
+                    //$value = $this->parentObj->get($field);
+                    break;
+
+                case 'System Default':
+                    // the default value (if there exists any) will be set by the resource/create processor
+                    continue 2;
             }
-            if (! $this->parentObj) {
-                $this->setError('&amp;' .$this->modx->lexicon('np_no_parent'));
-                return $retVal;
-            }
+
+            $defaults[$key] = $value;
         }
-        $prop = (string) $prop; // convert booleans
-        $prop == 'Yes'? '1': $prop;
-        $prop = $prop == 'No'? '0' :$prop;
 
-        if ($prop != 'System Default') {
-            if ($prop === '1' || $prop === '0') {
-                $retVal = $prop;
+        return $defaults;
 
-            } elseif ($prop == 'parent' || $prop === 'Parent') {
-                if ($field == 'groups') {
-                    $groupString = $this->_setGroups($prop, $this->parentObj);
-                    $retVal = $groupString;
-                    unset($groupString);
-                } else {
-                    $retVal = $this->parentObj->get($field);
-                }
-            } elseif ($field == 'groups') {
-                /* ToDo: Sanity Check groups here (or in _setGroups() ) */
-                $retVal = $this->_setGroups($prop);
-            }
-        } else { /* not 1, 0, or parent; use system default except for groups */
-            switch($field) {
-
-                case 'published':
-                    $option = 'publish_default';
-                    break;
-
-                case 'hidemenu':
-                    $option = 'hidemenu_default';
-                    break;
-
-                case 'cacheable':
-                    $option = 'cache_default';
-                    break;
-
-                case 'searchable':
-                    $option = 'search_default';
-                    break;
-
-                case 'richtext':
-                    $option = 'richtext_default';
-                    break;
-
-                default:
-                    $this->setError($this->modx->lexicon('np_unknown_field') . $field);
-                    return null;
-            }
-            if ($option != 'groups') {
-                $retVal = $this->modx->getOption($option);
-            }
-            if ($retVal === null) {
-                $this->setError($this->modx->lexicon('np_no_system_setting') . $option);
-            }
-
-        }
-        if ($retVal === null) {
-            $this->setError($this->modx->lexicon('np_illegal_value') . $field . ': ' . $prop . $this->modx->lexicon('np_no_permission') );
-        }
-        return $retVal;
     }
 
 
@@ -610,6 +545,7 @@ class Newspublisher {
     } /* end displayForm */
 
 
+
     /** displays an individual field
      * @access protected
      * @param $field (string) name of the field
@@ -617,7 +553,27 @@ class Newspublisher {
      */
 
     protected function _displayField($field) {
-      
+
+        /* Get the field value */
+        if ($this->isPostBack) {
+             $value = $_POST[$field];
+
+        } else {
+                        
+            if (isset($this->defaults[$field])) {
+                $value = $this->defaults[$field];
+                
+            } else {
+                $value = $this->resource->get($field);
+                if (strstr($value, '[[') && ! $this->modx->hasPermission('allow_modx_tags')) {
+                    $this->setError($this->modx->lexicon('np_no_modx_tags'));
+                    return null;
+                }
+            }
+        }
+        $value = str_replace(array('[',']'),array('&#91;','&#93;'),$value);
+        $this->modx->toPlaceholder($field, $value, $this->prefix);
+
         $replace = array();
         $inner = '';
         $replace['[[+npx.help]]'] = $this->props['hoverhelp'] ? '[[%resource_' . $field . '_help:notags]]' : '';
@@ -640,19 +596,28 @@ class Newspublisher {
         /* do content and introtext fields */
         switch ($field) {
             case 'content':
-                $type = $this->resource->get('class_key');
+                /* adjust content field type according to class_key */
+                if ($this->existing) $class_key = $this->resource->get('class_key');
+                else $class_key = isset($_POST['class_key']) ? $_POST['class_key'] : (isset($this->defaults['class_key'])? $this->defaults['class_key'] : 'modDocument');
 
-                if ($type == 'modSymLink' || $type == 'modWebLink') {
-                    $type = strtolower(substr($type, 3));
-                    $replace['[[+npx.caption]]'] = $this->modx->lexicon($type);
-                    $replace['[[+npx.help]]'] = $this->modx->lexicon($type.'_help');
-
-                    $inner .= $this->_displaySimple($field, 'textTpl', $this->textMaxlength);
+                switch ($class_key) {
+                    case 'modDocument':
+                        $rows =  ! empty($this->props['contentrows'])? $this->props['contentrows'] : '10';
+                        $cols =  ! empty($this->props['contentcols'])? $this->props['contentcols'] : '60';
+                        $inner .= $this->_displayTextarea($field, $this->props['rtcontent'], 'np-content', $rows, $cols);
+                        break;
                     
-                } else {
-                    $rows =  ! empty($this->props['contentrows'])? $this->props['contentrows'] : '10';
-                    $cols =  ! empty($this->props['contentcols'])? $this->props['contentcols'] : '60';
-                    $inner .= $this->_displayTextarea($field, $this->props['rtcontent'], 'np-content', $rows, $cols);
+                    case 'modWebLink':
+                    case 'modSymLink':
+                        $class_key = strtolower(substr($class_key, 3));
+                        $replace['[[+npx.caption]]'] = $this->modx->lexicon($class_key);
+                        $replace['[[+npx.help]]'] = $this->modx->lexicon($class_key.'_help');
+                        $inner .= $this->_displaySimple($field, 'TextTpl', $this->textMaxlength);
+                        break;
+
+                    case 'modStaticResource':
+                        $replace['[[+npx.caption]]'] = $this->modx->lexicon('staticresource');
+                        $inner .= $this->_displayFileInput($field, 'fileTpl');
                 }
                 break;
 
@@ -670,13 +635,13 @@ class Newspublisher {
                         $options[$template->get('id')] = $template->get('templatename');
                     }
                 }
-                $inner .= $this->_displayList($field, 'listbox', $options, $this->resource->get('template'));
+                $inner .= $this->_displayList($field, 'listbox', $options, $value);
                 break;
 
             case 'class_key':
                 $options = array();
-                $classes = array('modDocument', 'modSymLink', 'modWebLink', 'modStaticResource');
-                foreach ($classes as $key) $options[$key] = $key;
+                $classes = array('modDocument' => 'document', 'modSymLink' => 'symlink', 'modWebLink' => 'weblink', 'modStaticResource' => 'static_resource');
+                foreach ($classes as $k => $v) $options[$k] = $this->modx->lexicon($v);
                 $inner .= $this->_displayList($field, 'listbox', $options, $this->resource->get('class_key'));
                 break;
                 
@@ -684,7 +649,7 @@ class Newspublisher {
                 $options = array();
                 $dispo = array('inline', 'attachment');
                 foreach ($dispo as $k => $v) $options[$k] = $this->modx->lexicon($v);
-                $inner .= $this->_displayList($field, 'listbox', $options, $this->resource->get('content_dispo'));
+                $inner .= $this->_displayList($field, 'listbox', $options, $value);
                 break;
 
             case 'uri_override': /* correct schema errors */
@@ -699,7 +664,7 @@ class Newspublisher {
                         break;
 
                     case 'boolean':
-                        $inner .= $this->_displayBoolean($field, $this->resource->get($field));
+                        $inner .= $this->_displayBoolean($field, $value);
                         break;
 
                     case 'integer':
@@ -707,7 +672,7 @@ class Newspublisher {
                         break;
 
                     case 'timestamp':
-                        $inner .= $this->_displayDateInput($field, $this->resource->get($field));
+                        $inner .= $this->_displayDateInput($field, $value);
                         break;
                 }
         }
@@ -727,7 +692,6 @@ class Newspublisher {
      */
 
     protected function _displayTv($tvNameOrId) {
-
 
         if (is_numeric($tvNameOrId)) {
            $tvObj = $this->modx->getObject('modTemplateVar',$tvNameOrId);
@@ -755,6 +719,7 @@ class Newspublisher {
 
         $formTpl = '';
         $tv = $tvObj;
+
         $fields = $tv->toArray();
         $name = $fields['name'];
 
@@ -767,24 +732,35 @@ class Newspublisher {
         $tvType = $tvType == 'option'? 'radio' : $tvType;
 
         /* set TV to current value or default if not postBack */
-        if (! $this->isPostBack ) {
-            $ph = '';
-            if ($this->existing) {
-                $ph = $tv->getValue($this->existing);
-            }
-            /* empty value gets default_text for both new and existing docs */
-            if (empty($ph)) {
-                $ph = $fields['default_text'];
-            }
-            if (stristr($ph,'@EVAL') || stristr($_POST[$name],'@EVAL') || stristr($_POST[$name.'_time'], '@eval')) {
-                $this->setError($this->modx->lexicon('np_no_evals'). $tv->get('name'));
-                return null;
+        if ($this->isPostBack ) {
+            $value = $_POST[$name];
+            
+        } else {
+            if (isset($this->defaults[$name])) {
+                $value = $this->defaults[$name];
                 
             } else {
-
-                $this->modx->toPlaceholder($name, $ph, $this->prefix );
+                $value = '';
+                if ($this->existing) {
+                    $value = $tv->getValue($this->existing);
+                }
+                /* empty value gets default_text for both new and existing docs */
+                if (empty($value)) {
+                    $value = $fields['default_text'];
+                }
+                if (strstr($value, '[[') && ! $this->modx->hasPermission('allow_modx_tags')) {
+                    $this->setError($this->modx->lexicon('np_no_modx_tags'));
+                    return null;
+                }
+            }
+            if (stristr($value,'@EVAL') || stristr($_POST[$name.'_time'], '@eval')) {
+                $this->setError($this->modx->lexicon('np_no_evals'). $name);
+                return null;
             }
         }
+
+        $value = str_replace(array('[',']'),array('&#91;','&#93;'),$value);
+        $this->modx->toPlaceholder($name, $value, $this->prefix);
 
         $replace = array();
         $replace['[[+npx.help]]'] = $this->props['hoverhelp'] ? $fields['description'] :'';
@@ -793,7 +769,7 @@ class Newspublisher {
 
         switch ($tvType) {
             case 'date':
-                $formTpl .= $this->_displayDateInput($name, $tv->getValue($this->existing), $params);
+                $formTpl .= $this->_displayDateInput($name, $value, $params);
                 break;
 
             default:
@@ -840,7 +816,7 @@ class Newspublisher {
                 }
 
                 /* selected entries */
-                $selected = explode('||',$tv->getValue($this->existing));
+                $selected = is_array($value)? $value : explode('||', $value);
 
                 /* render HTML */
                 $formTpl .= $this->_displayList($name, $tvType, $options, $selected,
@@ -902,7 +878,7 @@ class Newspublisher {
                 foreach ($resources as $resource) {
                     $id = $resource->get('id');
                     $options[$id] = $resource->get('pagetitle'); //.' ('.$resource->get('id').')',
-                    if ($id == $tv->getValue($this->existing)) $selected[] = $id;
+                    if ($id == $value) $selected[] = $id;
                 }
 
                 /* If the list is empty do not require selecting something */
@@ -919,7 +895,6 @@ class Newspublisher {
 
                 $this->modx->getService('fileHandler','modFileHandler', '', array('context' => $this->context));
                 $params['wctx'] = $this->context; // not sure if this is important, doesn't seem to have an effect
-                $value = $tv->getValue($this->existing);
                 $openTo = '';
 
                 if (method_exists($tv, 'getSource')) { /* MODx version is 2.20 or higher */
@@ -947,19 +922,18 @@ class Newspublisher {
 
                 } else { /* MODx versions below 2.20 */
 
-                    $workingContext = $this->modx->getContext($this->context);
-                    $this->modx->fileHandler->context =& $workingContext;
+                    $this->modx->fileHandler->context =& $this->workingContext;
 
 
                     /* get base path based on either TV param or filemanager_path */
                     $replacePaths = array(
-                        '[[++base_path]]' => $workingContext->getOption('base_path',null,MODX_BASE_PATH),
-                        '[[++core_path]]' => $workingContext->getOption('core_path',null,MODX_CORE_PATH),
-                        '[[++manager_path]]' => $workingContext->getOption('manager_path',null,MODX_MANAGER_PATH),
-                        '[[++assets_path]]' => $workingContext->getOption('assets_path',null,MODX_ASSETS_PATH),
-                        '[[++base_url]]' => $workingContext->getOption('base_url',null,MODX_BASE_URL),
-                        '[[++manager_url]]' => $workingContext->getOption('manager_url',null,MODX_MANAGER_URL),
-                        '[[++assets_url]]' => $workingContext->getOption('assets_url',null,MODX_ASSETS_URL),
+                        '[[++base_path]]' => $this->workingContext->getOption('base_path',null,MODX_BASE_PATH),
+                        '[[++core_path]]' => $this->workingContext->getOption('core_path',null,MODX_CORE_PATH),
+                        '[[++manager_path]]' => $this->workingContext->getOption('manager_path',null,MODX_MANAGER_PATH),
+                        '[[++assets_path]]' => $this->workingContext->getOption('assets_path',null,MODX_ASSETS_PATH),
+                        '[[++base_url]]' => $this->workingContext->getOption('base_url',null,MODX_BASE_URL),
+                        '[[++manager_url]]' => $this->workingContext->getOption('manager_url',null,MODX_MANAGER_URL),
+                        '[[++assets_url]]' => $this->workingContext->getOption('assets_url',null,MODX_ASSETS_URL),
                     );
                     $replaceKeys = array_keys($replacePaths);
                     $replaceValues = array_values($replacePaths);
@@ -967,7 +941,7 @@ class Newspublisher {
                     if (empty($params['basePath'])) {
                         $params['basePath'] = $this->modx->fileHandler->getBasePath();
                         $params['basePath'] = str_replace($replaceKeys,$replaceValues,$params['basePath']);
-                        $params['basePathRelative'] = $workingContext->getOption('filemanager_path_relative',true) ? 1 : 0;
+                        $params['basePathRelative'] = $this->workingContext->getOption('filemanager_path_relative',true) ? 1 : 0;
                     } else {
                         $params['basePath'] = str_replace($replaceKeys,$replaceValues,$params['basePath']);
                         $params['basePathRelative'] = !isset($params['basePathRelative']) || in_array($params['basePathRelative'],array('true',1,'1'));
@@ -975,7 +949,7 @@ class Newspublisher {
                     if (empty($params['baseUrl'])) {
                         $params['baseUrl'] = $this->modx->fileHandler->getBaseUrl();
                         $params['baseUrl'] = str_replace($replaceKeys,$replaceValues,$params['baseUrl']);
-                        $params['baseUrlRelative'] = $workingContext->getOption('filemanager_url_relative',true) ? 1 : 0;
+                        $params['baseUrlRelative'] = $this->workingContext->getOption('filemanager_url_relative',true) ? 1 : 0;
                     } else {
                         $params['baseUrl'] = str_replace($replaceKeys,$replaceValues,$params['baseUrl']);
                         $params['baseUrlRelative'] = !isset($params['baseUrlRelative']) || in_array($params['baseUrlRelative'],array('true',1,'1'));
@@ -1134,7 +1108,7 @@ class Newspublisher {
                 $phpthumbUrl .= "&{$key}={$value}";
             }
 
-            $browserUrl .= '&tv=' . $name;
+            $browserUrl .= '&field=' . $name;
             $sourceOptions['openTo'] = $openTo;
             $_SESSION['newspublisher']['filebrowser'][$name] = $sourceOptions;
 
@@ -1292,7 +1266,6 @@ class Newspublisher {
                     $_POST[$k] = $this->modx->stripTags($v, $allowedTags);
                 }
         }
-        $oldFields = $this->resource->toArray();
 
         if (!empty($this->badwords)) {
             foreach ($_POST as $field => $val) {
@@ -1312,11 +1285,13 @@ class Newspublisher {
                 }
             }
         }
-        $fields = array_merge($oldFields, $_POST);
+        
+        $fields = $this->existing
+            ? array_merge($this->resource->toArray(), $_POST)
+            : array_merge($this->defaults, $_POST);
+                     
         if (!$this->existing) { /* new document */
 
-            /* ToDo: Move this to init()? */
-            /* set alias name of document used to store articles */
             if (empty($fields['alias'])) { /* leave it alone if filled */
                 if (!$this->aliasTitle) {
                     $suffix = !empty($this->props['aliasdatesuffix']) ? date($this->props['aliasdatesuffix']) : '-' . time();
@@ -1337,24 +1312,8 @@ class Newspublisher {
                 }
                 $fields['alias'] = $alias;
             }
-            /* set fields for new object */
 
-            /* set editedon and editedby for existing docs */
-            $fields['editedon'] = '0';
-            $fields['editedby'] = '0';
-
-            /* these *might* be in the $_POST array. Set them if not */
-            $fields['published'] = isset($_POST['published'])? $_POST['published']: $this->published;
-            $fields['hidemenu'] = isset($_POST['hidemenu'])? $_POST['hidemenu']: $this->hideMenu;
-            $fields['template'] = isset ($_POST['template']) ? $_POST['template'] : $this->template;
-            $fields['parent'] = isset ($_POST['parent']) ? $_POST['parent'] : $this->parentId;
-            $fields['searchable'] = isset ($_POST['searchable']) ? $_POST['searchable'] : $this->searchable;
-            $fields['cacheable'] = isset ($_POST['cacheable']) ? $_POST['cacheable'] : $this->cacheable;
-            $fields['richtext'] = isset ($_POST['richtext']) ? $_POST['richtext'] : $this->richtext;
-            $fields['createdby'] = $this->modx->user->get('id');
             $fields['content']  = $this->header . $fields['content'] . $this->footer;
-            $fields['context_key'] = $this->modx->context->get('key');
-
         }
 
         /* Add TVs to $fields for processor */
@@ -1480,6 +1439,7 @@ class Newspublisher {
 
     /** creates a JSON string to send in the resource_groups field
      * for resource/update or resource/create processors.
+     * If 'Parent' is supplied, the groups the parent resource belongs to are returned
      *
      * @access protected
      * @param string $resourceGroups - a comma-separated list of
@@ -1489,12 +1449,12 @@ class Newspublisher {
      * @return (string) (JSON encoded array)
      */
 
-    protected function _setGroups($resourceGroups, $parentObj = null) {
-
+    protected function _setGroups($resourceGroups) {
+      
         $values = array();
-        if ($resourceGroups == 'parent') {
+        if ($resourceGroups == 'parent' || $resourceGroups == 'Parent') {
 
-            $resourceGroups = (array) $parentObj->getMany('ResourceGroupResources');
+            $resourceGroups = (array) $this->parentObj->getMany('ResourceGroupResources');
 
             if (!empty($resourceGroups)) { /* parent belongs to at lease one resource group */
                 /* build $resourceGroups string from parent's groups */
@@ -1560,50 +1520,6 @@ class Newspublisher {
         $this->errors[] = $msg;
     }
 
-    /** Gets template ID of resource
-     * @return (int) returns the template ID
-     */
-    protected function _getTemplate() {
-        if ($this->existing) {
-            return $this->resource->get('template');
-        }
-        $template = $this->modx->getOption('default_template');
-
-        if ($this->props['template'] == 'parent') {
-            if (empty($this->parentId)) {
-                $this->setError($this->modx->lexicon('np_parent_not_sent'));
-            }
-            if (empty($this->parentObj)) {
-                $this->parentObj = $this->modx->getObject('modResource', $this->parentId);
-            }
-            if ($this->parentObj) {
-                $template = $this->parentObj->get('template');
-            } else {
-                $this->setError($this->modx->lexicon('np_parent_not_found') . $this->parentId);
-            }
-
-        } elseif (!empty($this->props['template'])) {
-
-
-            if (is_numeric($this->props['template'])) { /* user sent a number */
-                $t = $this->modx->getObject('modTemplate', $this->props['template']);
-                /* make sure it exists */
-                if (! $t) {
-                    $this->SetError($this->modx->lexicon('np_no_template_id') . $this->props['template']);
-                }
-            } else { /* user sent a template name */
-                $t = $this->modx->getObject('modTemplate', array('templatename' => $this->props['template']));
-                if (!$t) {
-                    $this->setError($this->modx->lexicon('np_no_template_name') . $this->props['template']);
-                }
-            }
-            $template = $t ? $t->get('id')
-                        : $this->modx->getOption('default_template');
-                unset($t);
-        }
-
-        return $template;
-    }
 
     /** Checks form fields before saving.
      *  Sets an error for the header and another for each

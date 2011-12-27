@@ -72,7 +72,7 @@ $_lang['np_aliasprefix_desc'] = '(optional) Prefix to be prepended to alias for 
 $_lang['np_intmaxlength_desc'] = '(optional) Max length for integer input fields; default: 10.';
 $_lang['np_textmaxlength_desc'] = '(optional) Max length for text input fields; default: 60.';
 $_lang['np_hoverhelp_desc'] = '(optional) Show help when hovering over field caption; default: Yes.';
-
+$_lang['np_defaults_desc'] = '(optional) Allows for specifying initial values for fields and TVs in new resources. Accepts a comma separated list key:value pairs. Example: `pagetitle:Proposed title,color:green,published:1,template:2`';
 
 
 
