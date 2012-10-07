@@ -2,7 +2,7 @@
 
 /**
  * NpEditThisButton
- * Copyright 2011 Bob Ray
+ * Copyright 2011-2012 Bob Ray
  *
  * @version Version 1.0.0 beta-1
  *
@@ -30,7 +30,7 @@
  *
  * @property np_id (int) - ID of newspublisher page (set automatically on first run).
  * @property np_edit_id (int) - ID of resource to be edited
- * @property noShow - Comma-separated list of IDs of documents
+ * @property noShow (string) - Comma-separated list of IDs of documents
  *      on which the button should not be displayed. Defaults to
  *      home page, and NewsPublisher page.
  * @property bottom (optional) - distance from bottom of window to place
@@ -48,6 +48,7 @@
  *
  */
 
+/* @var $modx modX */
 /* ToDo: Internationalize button caption debug messages */
 $props =& $scriptProperties;
 /* let user &language property override default language */
@@ -73,12 +74,14 @@ $npEditId = $modx->getOption('np_edit_id', $props, '');
 /* set the np_id property to the ID of the NewsPublisher page
  * on first run if possible, error message if not */
 if (empty($npId)) {
+
     $npObj = $modx->getObject('modResource', array('pagetitle' => 'NewsPublisher'));
     if (!$npObj) { /* Try lowercase version */
         $npObj = $modx->getObject('modResource', array('pagetitle' => 'Newspublisher'));
     }
     $success = true;
     if ($npObj) {
+        /* @var $npObj modSnippet */
         $npId = $npObj->get('id');
         $npObj = $modx->getObject('modSnippet', array('name' => 'NpEditThisButton'));
         if ($npObj) {

@@ -3,7 +3,7 @@
 /**
  * NewsPublisher
  *
- * Copyright 2011 Bob Ray
+ * Copyright 2011-2012 Bob Ray
  *
  * @author Bob Ray <http://bobsguides.com>
  * @author Raymond Irving
@@ -47,19 +47,15 @@ class Newspublisher {
     */
     protected $modx;
     /**
-     * @var string current context
+     * @var $context string name of current context
      */
     protected $context;
-    /**
-     * @var object current modContext
-     */
-    protected $workingContext;
     /**
      * @var array scriptProperties array
      */
     protected $props;
     /**
-     * @var array Array of all TVs
+     * @var $allTvs array Array of all TVs
      */
     protected $allTvs;
     /**
@@ -67,15 +63,17 @@ class Newspublisher {
      */
     protected $errors;
     /**
-     * @var modResource The current resource
+     * @var $resource modResource The current resource
      */
     protected $resource;
+    /** @var $classKey string class of the resource */
+    protected $classKey;
     /**
      * @var int ID of the resource's parent
      */
     protected $parentId;
     /**
-     * @var modResource The parent object
+     * @var $parentObj modResource The parent object
      */
     protected $parentObj;
     /**
@@ -86,10 +84,6 @@ class Newspublisher {
      * @var boolean Indicates a repost to self
      */
     protected $isPostBack;
-    /**
-     * @var array Holds inital values of Fields/TVs which are used if a new resource is created
-     */
-    protected $defaults;
     /**
      * @var string Path to NewsPublisher Core
      */
@@ -155,7 +149,16 @@ class Newspublisher {
      * @var int Max length for text input fields
      */
     protected $textMaxlength;
-
+    /**
+     * @var $captions array (associative) array of fieldnames:fieldcaptions
+     */
+    protected $captions;
+    /** @var $useTabs boolean - create separate tabs */
+    protected $useTabs;
+    /** @var $tabs string - tab specification JSON string */
+        protected $tabs;
+    /** @var $activeTab string - tab to start on */
+        protected $activeTab;
 
     /** NewsPublisher constructor
      *
@@ -203,8 +206,7 @@ class Newspublisher {
 
         public function init($context) {
             $this->context = $context;
-            $this->workingContext = $this->modx->getContext($this->context);
-            
+
             $language = !empty($this->props['language'])
                     ? $this->props['language']
                     : $this->modx->getOption('cultureKey',null,$this->modx->getOption('manager_language',null,'en'));
@@ -216,6 +218,16 @@ class Newspublisher {
                     $this->modx->lexicon->load($language . ':newspublisher:default');
                     break;
             }
+            /* set tab properties */
+            $this->useTabs = isset($this->props['usetabs'])? ! empty($this->props['usetabs']) : false;
+            $this->tabs = isset($this->props['tabs'])? $this->props['tabs'] : null;
+            $this->activeTab = isset($this->props['activetab']) && !empty($this->props['activetab'])
+                ? $this->props['activetab']
+                : '';
+
+
+
+            $this->classKey = (! isset($this->props['classkey'])) || empty($this->props['classkey'])? 'modDocument' : $this->props['classkey'];
                        /* inject NP CSS file */
            /* Empty but sent parameter means use no CSS file at all */
 
@@ -250,20 +262,26 @@ class Newspublisher {
                 }
             }
 
+
             if ($this->existing) {
 
                 $this->resource = $this->modx->getObject('modResource', $this->existing);
                 if ($this->resource) {
 
-                    if (!$this->modx->hasPermission('view_document') || !$this->resource->checkPolicy('view') ) {
-                        $this->setError($this->modx->lexicon('np_view_permission_denied'));
+                    if (! ($this->modx->hasPermission('view_document') && $this->resource->checkPolicy('view')) ) {
+                        if (!$this->modx->hasPermission('view_document')) {
+                            $this->setError($this->modx->lexicon('np_view_permission_denied'));
+                        }
+                        if (!$this->resource->checkPolicy('view')) {
+                            $this->setError($this->modx->lexicon('np_view_this_permission_denied'));
+                        }
+                        return;
                     }
                     
                 } else {
                    $this->setError($this->modx->lexicon('np_no_resource') . $this->existing);
                    return;
                 }
-
                 $this->template = isset($_POST['template']) ? $_POST['template'] : $this->resource->get('template');
                 
                 /* need to forward this from $_POST so we know it's an existing doc */
@@ -275,8 +293,9 @@ class Newspublisher {
                 /* new document */
                 if (!$this->modx->hasPermission('new_document')) {
                     $this->setError($this->modx->lexicon('np_create_permission_denied'));
+                    return;
                 }
-                $this->resource = $this->modx->newObject('modResource');
+                $this->resource = $this->modx->newObject($this->classKey);
                 /* get folder id where we should store articles
                  else store under current document */
                 $this->parentId = !empty($this->props['parentid']) ? intval($this->props['parentid']):$this->modx->resource->get('id');
@@ -289,18 +308,19 @@ class Newspublisher {
                 /* these fields need to be set in new docs
                  * TODO: not sure where the default system settings should be set. They are only needed if a field is displayed,
                  * otherwise they will be set by the resource/create processor  */
+                $workingContext = $this->modx->getContext($this->context);;
                 $this->defaults = array(
                     'editedon'    => '0',
                     'editedby'    => '0',
                     'parent'      => $this->parentId,
                     'createdby'   => $this->modx->user->get('id'),
                     'context_key' => $this->parentObj->get('context_key'),
-                    'template'    => (integer) $this->workingContext->getOption('default_template', 0),
-                    'hidemenu'    => (integer) $this->workingContext->getOption('hidemenu_default', 0),
-                    'richtext'    => (integer) $this->workingContext->getOption('richtext_default', 1),
-                    'published'   => (integer) $this->workingContext->getOption('publish_default', 0),
-                    'cacheable'   => (integer) $this->workingContext->getOption('cache_default', 1),
-                    'searchable'  => (integer) $this->workingContext->getOption('search_default', 1)
+                    'template'    => (integer) $workingContext->getOption('default_template', 0),
+                    'hidemenu'    => (integer) $workingContext->getOption('hidemenu_default', 0),
+                    'richtext'    => (integer) $workingContext->getOption('richtext_default', 1),
+                    'published'   => (integer) $workingContext->getOption('publish_default', 0),
+                    'cacheable'   => (integer) $workingContext->getOption('cache_default', 1),
+                    'searchable'  => (integer) $workingContext->getOption('search_default', 1)
                 );
                 
                 /* get the default values (if set) */
@@ -319,6 +339,7 @@ class Newspublisher {
                 $this->header = !empty($this->props['headertpl']) ? $this->modx->getChunk($this->props['headertpl']) : '';
                 $this->footer = !empty($this->props['footertpl']) ? $this->modx->getChunk($this->props['footertpl']):'';
 
+
             }
 
              if( !empty($this->props['badwords'])) {
@@ -327,7 +348,6 @@ class Newspublisher {
              }
 
            $this->modx->lexicon->load('core:resource');
-
            if($this->props['initdatepicker']) {
                 $this->modx->regClientCSS($this->assetsUrl . 'datepicker/css/datepicker.css');
                 $this->modx->regClientStartupHTMLBlock('<script type=text/javascript src="' . $this->assetsUrl . 'datepicker/js/datepicker.packed.js">{"lang":"' . $language . '"}</script>');
@@ -339,80 +359,49 @@ class Newspublisher {
            $this->intMaxlength = !empty($this->props['intmaxlength'])? $this->props['intmaxlength'] : 10;
            $this->textMaxlength = !empty($this->props['textmaxlength'])? $this->props['textmaxlength'] : 60;
 
-           if (false) { /* do rich text stuff */
-               //$ph = ! empty($this->props['rtcontent']) ? 'MODX_RichTextWidget':'content';
-               $ph = !empty($this->props['rtcontent'])
-                       ? 'modx-richtext' : 'np-content';
-               $this->modx->toPlaceholder('rt_content_1', $ph, $this->prefix);
-               $ph = !empty($this->props['rtcontent'])
-                       ? 'modx-richtext' : 'np-content';
-               $this->modx->toPlaceholder('rt_content_2', $ph, $this->prefix);
-
-
-               /* set rich text summary field */
-
-               $ph = !empty($this->props['rtsummary'])
-                       ? 'modx-richtext' : 'np-introtext';
-               $this->modx->toPlaceholder('rt_summary_1', $ph, $this->prefix);
-               $ph = !empty($this->props['rtsummary'])
-                       ? 'modx-richtext' : 'np-introtext';
-               $this->modx->toPlaceholder('rt_summary_2', $ph, $this->prefix);
-           }
-
-            unset($ph);
-           if ($this->props['initrte']) {
-                /* set rich text content placeholders and includes necessary js files */
-               $tinyPath = $this->modx->getOption('core_path').'components/tinymce/';
-               $this->modx->regClientStartupScript($this->modx->getOption('manager_url').'assets/ext3/adapter/ext/ext-base.js');
-               $this->modx->regClientStartupScript($this->modx->getOption('manager_url').'assets/ext3/ext-all.js');
-               $this->modx->regClientStartupScript($this->modx->getOption('manager_url').'assets/modext/core/modx.js');
+            /* new code from Markus Schlegel */
+            if ($this->props['initrte']) {
 
 
                $whichEditor = $this->modx->getOption('which_editor',null,'');
 
-               $plugin=$this->modx->getObject('modPlugin',array('name'=>$whichEditor));
                if ($whichEditor == 'TinyMCE' ) {
-                   //$tinyUrl = $this->modx->getOption('assets_url').'components/tinymcefe/';
+                    $_REQUEST['a'] = '';  /* fixes E_NOTICE bug in TinyMCE */
+                    $plugin=$this->modx->getObject('modPlugin',array('name'=>'TinyMCE'));
+
+                    /* set rich text content placeholders and includes necessary js files */
+                    $this->modx->regClientStartupScript($this->modx->getOption('manager_url').'assets/ext3/adapter/ext/ext-base.js');
+                    $this->modx->regClientStartupScript($this->modx->getOption('manager_url').'assets/ext3/ext-all.js');
+                    $this->modx->regClientStartupScript($this->modx->getOption('manager_url').'assets/modext/core/modx.js');
+
+                    $tinyPath = $this->modx->getOption('core_path').'components/tinymce/';
                     $tinyUrl = $this->modx->getOption('assets_url').'components/tinymce/';
-                   /* OnRichTextEditorInit */
+                    /* @var $plugin modPlugin */
+                    $tinyproperties=$plugin->getProperties();
+                    require_once $tinyPath.'tinymce.class.php';
+                    $tiny = new TinyMCE($this->modx, $tinyproperties);
 
-                   $tinyproperties=$plugin->getProperties();
-                   require_once $tinyPath.'tinymce.class.php';
-                   $tiny = new TinyMCE($this->modx,$tinyproperties,$tinyUrl);
-                   // if (isset($this->props['forfrontend']) || $this->modx->isFrontend()) {
-                   if (isset($this->props['forfrontend']) || $this->modx->context->get('key') != 'mgr') {
-                       $tinyproperties['language'] = $this->modx->getOption('fe_editor_lang',array(),$language);
-                       $tinyproperties['frontend'] = true;
-                       unset($def);
-                   }
-                   $tinyproperties['cleanup'] = true; /* prevents "bogus" bug */
-                   $tinyproperties['width'] = empty ($this->props['tinywidth'] )? '95%' : $this->props['tinywidth'];
-                   $tinyproperties['height'] = empty ($this->props['tinyheight'])? '400px' : $this->props['tinyheight'];
+                    $tinyproperties['language'] = $this->modx->getOption('fe_editor_lang',array(),$language);
+                    $tinyproperties['frontend'] = true;
+                    $tinyproperties['cleanup'] = true; /* prevents "bogus" bug */
+                    $tinyproperties['width'] = empty ($this->props['tinywidth'] )? '95%' : $this->props['tinywidth'];
+                    $tinyproperties['height'] = empty ($this->props['tinyheight'])? '400px' : $this->props['tinyheight'];
+                   $tinyproperties['resource'] = $this->resource;
+                    $tiny->setProperties($tinyproperties);
+                    $tiny->initialize();
 
-                   //$tinyproperties['tiny.custom_buttons1'] = 'image';
-                   //$tinyproperties['tiny.custom_buttons2'] = '';
-
-                   $tiny->setProperties($tinyproperties);
-
-                   $html = $tiny->initialize();
-
-                   $this->modx->regClientStartupScript($tiny->config['assetsUrl'].'jscripts/tiny_mce/langs/'.$tiny->properties['language'].'.js');
-                   $this->modx->regClientStartupScript($tiny->config['assetsUrl'].'tiny.browser.js');
-
-                   $this->modx->regClientStartupHTMLBlock('<script type="text/javascript">
-                       Ext.onReady(function() {
-                       MODx.loadRTE();
-                       '.$js.'
-                       });
-                   </script>');
+                    $this->modx->regClientStartupHTMLBlock('<script type="text/javascript">
+                        delete Tiny.config.setup; // remove manager specific initialization code (depending on ModExt)
+                        Ext.onReady(function() {
+                            MODx.loadRTE();
+                        });
+                    </script>');
 
                } /* end if ($whichEditor == 'TinyMCE') */
 
            } /* end if ($richtext) */
 
         } /* end init */
-
-
 
     /** Parses a string of default values which are set in new resources in the form 'field_or_tv:value'
      *  If the value is set to 'Parent' value of the corresponding field/TV is retrieved from the
@@ -511,10 +500,10 @@ class Newspublisher {
      * the necessary Tpls and calling _displayTv() for any TVs.
      *
      * @access public
-     * @param (string) $show - comma-separated list of fields and TVs
+     * @param $show string - comma-separated list of fields and TVs
      * (name or ID) to include in the form
      *
-     * @return (string) returns the finished form
+     * @return string -  returns the finished form
      */
     public function displayForm($show) {
 
@@ -525,9 +514,37 @@ class Newspublisher {
             $this->setError($this->modx->lexicon('np_no_resource'));
             return $this->getTpl('OuterTpl');
         }
+        if ($this->useTabs) {
+            if (! $this->modx->fromJSON($this->tabs)) {
+                $this->setError($this->modx->lexicon('np_invalid_tabs'));
+                return $this->getTpl('OuterTpl');
+
+            } else {
+                $tabsJs = $this->modx->getChunk('npTabsJs', array(
+                    'activeButton' => $this->activeTab,
+                    'buttonsJson' => $this->tabs,
+                ));
+                $this->modx->regClientStartupScript('//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript');
+                $this->modx->regClientStartupScript($tabsJs);
+                unset($tabsJs);
+                //$this->setError('json_passed');
+            }
+
+        }
 
         /* get the resource field names */
-        $resourceFieldNames = array_keys($this->modx->getFields('modResource'));
+        $resourceFieldNames = array_keys($this->modx->getFields($this->classKey));
+
+        /* set captions from properties (if any) */
+        if (! empty($this->props['captions'])) {
+            $captionSettings = explode(',',$this->props['captions']);
+            if (!empty($captionSettings)) {
+                foreach ($captionSettings as $captionSetting) {
+                    $pair = explode(':', $captionSetting, 2);
+                    $this->captions[trim($pair[0])] = trim($pair[1]);
+                }
+            }
+        }
 
         foreach($fields as $field) {
             $field = trim($field);
@@ -551,7 +568,6 @@ class Newspublisher {
     } /* end displayForm */
 
 
-
     /** displays an individual field
      * @access protected
      * @param $field (string) name of the field
@@ -559,6 +575,7 @@ class Newspublisher {
      */
 
     protected function _displayField($field) {
+        /* @var $template modTemplateVar */
 
         /* Get the field value */
         if ($this->isPostBack) {
@@ -582,8 +599,11 @@ class Newspublisher {
 
         $replace = array();
         $inner = '';
+        /* set hover help unless user has turned it off */
         $replace['[[+npx.help]]'] = $this->props['hoverhelp'] ? '[[%resource_' . $field . '_help:notags]]' : '';
-        $replace['[[+npx.caption]]'] = '[[%resource_' . $field . ']]';
+        /* if set use 1) caption from properties, 2) MODX field captions */
+        $caption =  !empty($this->captions[$field]) ? $this->captions[$field] : '[[%resource_' . $field . ']]';
+        $replace['[[+npx.caption]]'] = $caption;
         $fieldType = $this->resource->_fieldMeta[$field]['phptype'];
 
         if ($field == 'id') {
@@ -607,6 +627,7 @@ class Newspublisher {
                 else $class_key = isset($_POST['class_key']) ? $_POST['class_key'] : (isset($this->defaults['class_key'])? $this->defaults['class_key'] : 'modDocument');
 
                 switch ($class_key) {
+                    default:
                     case 'modDocument':
                         $rows =  ! empty($this->props['contentrows'])? $this->props['contentrows'] : '10';
                         $cols =  ! empty($this->props['contentcols'])? $this->props['contentcols'] : '60';
@@ -622,7 +643,7 @@ class Newspublisher {
                         break;
 
                     case 'modStaticResource':
-                        $replace['[[+npx.caption]]'] = $this->modx->lexicon('staticresource');
+                        $replace['[[+npx.caption]]'] = $this->modx->lexicon('static_resource');
                         $inner .= $this->_displayFileInput($field, 'fileTpl');
                 }
                 break;
@@ -646,7 +667,8 @@ class Newspublisher {
 
             case 'class_key':
                 $options = array();
-                $classes = array('modDocument' => 'document', 'modSymLink' => 'symlink', 'modWebLink' => 'weblink', 'modStaticResource' => 'static_resource');
+                $classes = ($this->classKey != 'modDocument')? array($this->classKey => $this->classKey) : array();
+                $classes = array_merge($classes, array('modDocument' => 'document', 'modSymLink' => 'symlink', 'modWebLink' => 'weblink', 'modStaticResource' => 'static_resource'));
                 foreach ($classes as $k => $v) $options[$k] = $this->modx->lexicon($v);
                 $inner .= $this->_displayList($field, 'listbox', $options, $this->resource->get('class_key'));
                 break;
@@ -661,7 +683,7 @@ class Newspublisher {
             case 'uri_override': /* correct schema errors */
             case 'hidemenu':
                 $fieldType = 'boolean';
-                
+            /* intentional fall through */
             default:
                 switch($fieldType) {
                     case 'string':
@@ -699,8 +721,13 @@ class Newspublisher {
 
     protected function _displayTv($tvNameOrId) {
 
+        /* @var $tvObj modTemplateVar */
+        /* @var $tv modTemplateVar */
+        /* @var $parent modResource */
+        /* @var $resource modResource */
+
         if (is_numeric($tvNameOrId)) {
-           $tvObj = $this->modx->getObject('modTemplateVar',$tvNameOrId);
+           $tvObj = $this->modx->getObject('modTemplateVar', (integer) $tvNameOrId);
         } else {
            $tvObj = $this->modx->getObject('modTemplateVar',array('name' => $tvNameOrId));
         }
@@ -725,13 +752,12 @@ class Newspublisher {
 
         $formTpl = '';
         $tv = $tvObj;
-
         $fields = $tv->toArray();
         $name = $fields['name'];
 
         $params = $tv->get('input_properties');
-        /* use TV's name as caption if caption is empty */
-        $caption = empty($fields['caption'])? $name : $fields['caption'];
+        /* if set, use 1) caption from properties, 2) field caption, 3) field name */
+        $caption = !empty ($this->captions[$name]) ? $this->captions[$name] : (empty($fields['caption'])? $name : $fields['caption']);
 
         /* Build TV input code dynamically based on type */
         $tvType = $tv->get('type');
@@ -759,7 +785,7 @@ class Newspublisher {
                     return null;
                 }
             }
-            if (stristr($value,'@EVAL') || stristr($_POST[$name.'_time'], '@eval')) {
+            if (stristr($ph,'@EVAL') || stristr($_POST[$name],'@EVAL') || stristr($_POST[$name.'_time'], '@eval')) {
                 $this->setError($this->modx->lexicon('np_no_evals'). $name);
                 return null;
             }
@@ -767,7 +793,6 @@ class Newspublisher {
 
         $value = str_replace(array('[',']'),array('&#91;','&#93;'),$value);
         $this->modx->toPlaceholder($name, $value, $this->prefix);
-
         $replace = array();
         $replace['[[+npx.help]]'] = $this->props['hoverhelp'] ? $fields['description'] :'';
         $replace['[[+npx.caption]]'] = $caption;
@@ -833,7 +858,6 @@ class Newspublisher {
 
                 /* code adapted from core/model/modx/processors/element/tv/renders/mgr/input/resourcelist.php */
 
-                $parents = $tv->get('elements');
                 $bindingsResult = $tv->processBindings($tv->get('elements'), $this->modx->resource->get('id'));
                 $parents = $tv->parseInputOptions($bindingsResult);
                 $parents = !empty($params['parents']) || $params['parents'] === '0' ? explode(',',$params['parents']) : $parents;
@@ -881,6 +905,7 @@ class Newspublisher {
 
                 /* iterate */
                 $options = array();
+                $selected = array();
                 foreach ($resources as $resource) {
                     $id = $resource->get('id');
                     $options[$id] = $resource->get('pagetitle'); //.' ('.$resource->get('id').')',
@@ -901,6 +926,7 @@ class Newspublisher {
 
                 $this->modx->getService('fileHandler','modFileHandler', '', array('context' => $this->context));
                 $params['wctx'] = $this->context; // not sure if this is important, doesn't seem to have an effect
+                $value = $tv->getValue($this->existing);
                 $openTo = '';
 
                 if (method_exists($tv, 'getSource')) { /* MODx version is 2.20 or higher */
@@ -924,22 +950,22 @@ class Newspublisher {
                     if (!empty($value)) {
                         $openTo = $source->getOpenTo($value,$params);
                     }
-                    $tv->set('relativeValue',$value);
 
                 } else { /* MODx versions below 2.20 */
 
-                    $this->modx->fileHandler->context =& $this->workingContext;
+                    $workingContext = $this->modx->getContext($this->context);
+                    $this->modx->fileHandler->context =& $workingContext;
 
 
                     /* get base path based on either TV param or filemanager_path */
                     $replacePaths = array(
-                        '[[++base_path]]' => $this->workingContext->getOption('base_path',null,MODX_BASE_PATH),
-                        '[[++core_path]]' => $this->workingContext->getOption('core_path',null,MODX_CORE_PATH),
-                        '[[++manager_path]]' => $this->workingContext->getOption('manager_path',null,MODX_MANAGER_PATH),
-                        '[[++assets_path]]' => $this->workingContext->getOption('assets_path',null,MODX_ASSETS_PATH),
-                        '[[++base_url]]' => $this->workingContext->getOption('base_url',null,MODX_BASE_URL),
-                        '[[++manager_url]]' => $this->workingContext->getOption('manager_url',null,MODX_MANAGER_URL),
-                        '[[++assets_url]]' => $this->workingContext->getOption('assets_url',null,MODX_ASSETS_URL),
+                        '[[++base_path]]' => $workingContext->getOption('base_path',null,MODX_BASE_PATH),
+                        '[[++core_path]]' => $workingContext->getOption('core_path',null,MODX_CORE_PATH),
+                        '[[++manager_path]]' => $workingContext->getOption('manager_path',null,MODX_MANAGER_PATH),
+                        '[[++assets_path]]' => $workingContext->getOption('assets_path',null,MODX_ASSETS_PATH),
+                        '[[++base_url]]' => $workingContext->getOption('base_url',null,MODX_BASE_URL),
+                        '[[++manager_url]]' => $workingContext->getOption('manager_url',null,MODX_MANAGER_URL),
+                        '[[++assets_url]]' => $workingContext->getOption('assets_url',null,MODX_ASSETS_URL),
                     );
                     $replaceKeys = array_keys($replacePaths);
                     $replaceValues = array_values($replacePaths);
@@ -947,7 +973,7 @@ class Newspublisher {
                     if (empty($params['basePath'])) {
                         $params['basePath'] = $this->modx->fileHandler->getBasePath();
                         $params['basePath'] = str_replace($replaceKeys,$replaceValues,$params['basePath']);
-                        $params['basePathRelative'] = $this->workingContext->getOption('filemanager_path_relative',true) ? 1 : 0;
+                        $params['basePathRelative'] = $workingContext->getOption('filemanager_path_relative',true) ? 1 : 0;
                     } else {
                         $params['basePath'] = str_replace($replaceKeys,$replaceValues,$params['basePath']);
                         $params['basePathRelative'] = !isset($params['basePathRelative']) || in_array($params['basePathRelative'],array('true',1,'1'));
@@ -955,7 +981,7 @@ class Newspublisher {
                     if (empty($params['baseUrl'])) {
                         $params['baseUrl'] = $this->modx->fileHandler->getBaseUrl();
                         $params['baseUrl'] = str_replace($replaceKeys,$replaceValues,$params['baseUrl']);
-                        $params['baseUrlRelative'] = $this->workingContext->getOption('filemanager_url_relative',true) ? 1 : 0;
+                        $params['baseUrlRelative'] = $workingContext->getOption('filemanager_url_relative',true) ? 1 : 0;
                     } else {
                         $params['baseUrl'] = str_replace($replaceKeys,$replaceValues,$params['baseUrl']);
                         $params['baseUrlRelative'] = !isset($params['baseUrlRelative']) || in_array($params['baseUrlRelative'],array('true',1,'1'));
@@ -969,11 +995,6 @@ class Newspublisher {
                         $params['baseUrl'] = ltrim(str_replace($modxBaseUrl,'',$params['baseUrl']),'/');
                     }
 
-                    if (!empty($params['baseUrl']) && !empty($value)) {
-                        $relativeValue = $params['baseUrl'].ltrim($value,'/');
-                    } else {
-                        $relativeValue = $value;
-                    }
                     if (!empty($value) && strpos($value,'/') !== false) {
                         $openTo = pathinfo($value,PATHINFO_DIRNAME);
                         $openTo = rtrim($openTo,'/').'/';
@@ -988,7 +1009,7 @@ class Newspublisher {
         $formTpl = $this->strReplaceAssoc($replace, $formTpl);
 
         /* Add TV to required fields if blank values are not allowed */
-        if ($params['allowBlank'] == 'false') $this->props['required'] .= ',' . $name;
+        if (isset($params['allowBlank']) && ($params['allowBlank'] == 'false')) $this->props['required'] .= ',' . $name;
         
         return $formTpl;
     }
@@ -1040,43 +1061,44 @@ class Newspublisher {
               $s = '';
             }
             $this->modx->toPlaceholder($name, $s, $this->prefix);
-          }
+        }
           
-          /* Set disabled dates */
-          
-          $disabled = '';
-          if ($options['disabledDates']) {
-              $disabled .= 'disabledDates:{';
-              foreach (explode(',', $options['disabledDates']) as $d) {
-                  $disabled .= '"';
-                  $d = str_replace('-', '', $d);
-                  $d = str_replace('.', '*', $d);
-                  if (! (strpos($d, '^') === false)) {
-                      $d = str_replace('^',  str_repeat('*', 9 - strlen($d)), $d);
-                  }
-                  $disabled .= $d . '":1,';
+      /* Set disabled dates */
+
+      $disabled = '';
+      if (isset($options['disabledDates']) && $options['disabledDates']) {
+          $disabled .= 'disabledDates:{';
+          foreach (explode(',', $options['disabledDates']) as $d) {
+              $disabled .= '"';
+              $d = str_replace('-', '', $d);
+              $d = str_replace('.', '*', $d);
+              if (! (strpos($d, '^') === false)) {
+                  $d = str_replace('^',  str_repeat('*', 9 - strlen($d)), $d);
               }
-              $disabled .= '},';
+              $disabled .= $d . '":1,';
           }
-          if ($options['disabledDays']) {
-              $disabled .= 'disabledDays:[';
-              $days = explode(',', $options['disabledDays']);
-              for ($day = 1; $day <= 7; $day++) {
-                  $disabled .= (in_array($day, $days) ? 1 : 0) . ',';
-              }
-              $disabled .= '],';
+          $disabled .= '},';
+      }
+      if (isset($options['disabledDays']) && $options['disabledDays']) {
+          $disabled .= 'disabledDays:[';
+          $days = explode(',', $options['disabledDays']);
+          for ($day = 1; $day <= 7; $day++) {
+              $disabled .= (in_array($day, $days) ? 1 : 0) . ',';
           }
-          if ($options['minDateValue']) {
-              $disabled .= 'rangeLow:"' . str_replace('-', '', $options['minDateValue']) . '",';
-          }
-          if ($options['maxDateValue']) {
-              $disabled .= 'rangeHigh:"' . str_replace('-', '', $options['maxDateValue']) . '",';
-          }
-          
-          $PHs = array('[[+npx.disabledDates]]' => $disabled);
+          $disabled .= '],';
+      }
+      if (isset($options['minDateValue']) && $options['minDateValue']) {
+          $disabled .= 'rangeLow:"' . str_replace('-', '', $options['minDateValue']) . '",';
+      }
+      if (isset($options['maxDateValue']) && $options['maxDateValue']) {
+          $disabled .= 'rangeHigh:"' . str_replace('-', '', $options['maxDateValue']) . '",';
+      }
+
+      $PHs = array('[[+npx.disabledDates]]' => $disabled);
 
         return $this->strReplaceAssoc($PHs, $this->getTpl('DateTpl'));
     }
+    
     /** Produces the HTML code for simple text fields/TVs
      * 
      * @access protected
@@ -1104,7 +1126,8 @@ class Newspublisher {
 
     protected function _displayFileInput($name, $tplName, $sourceOptions = array(), $openTo = '') {
 
-        $browserAction = $this->modx->getObject('modAction',array('namespace'  => 'newspublisher'));
+        /* @var $browserAction modAction */
+        $browserAction = $this->modx->getObject('modAction', array('namespace' => 'newspublisher', 'controller' => 'filebrowser'));
         $browserUrl = $browserAction ? $this->modx->getOption('manager_url',null,MODX_MANAGER_URL).'index.php?a='.$browserAction->get('id') : null;
 
         if ($browserUrl) {
@@ -1120,7 +1143,7 @@ class Newspublisher {
 
              $PHs = array(
                 '[[+npx.phpthumbBaseUrl]]' => $phpthumbUrl,
-                '[[+npx.launchBrowser]]'   => "var popup=window.open('{$browserUrl}', 'select file', 'width=' + Math.min(screen.availWidth,1000) + ',height=' + Math.min(screen.availHeight*0.9,700) + 'resizable=no,status=no,location=no,toolbar=no');popup.focus();browserPathInput=getElementById('np-{$name}');return false;"
+                '[[+npx.browserUrl]]'   => $browserUrl
             );
             
             return $this->strReplaceAssoc($PHs, $this->getTpl($tplName));
@@ -1243,14 +1266,14 @@ class Newspublisher {
                 $PHs['[[+npx.class]]'] = 'modx-richtext';
             } else {
                 $msg = $this->modx->lexicon('np_no_rte');
-                $this->setError($msg . $field);
-                $this->setFieldError($field, $msg);
+                $this->setError($msg . $name);
+                $this->setFieldError($name, $msg);
                 $PHs['[[+npx.class]]'] = $noRTE_class;
             }
         } else {
             $PHs['[[+npx.class]]'] = $noRTE_class;
         }
-        return $this->strReplaceAssoc($PHs, $this->getTpl('TextareaTpl'));
+        return $this->strReplaceAssoc($PHs, $this->getTpl('TextAreaTpl'));
     }
 
 
@@ -1264,6 +1287,16 @@ class Newspublisher {
      */
 
     public function saveResource() {
+        /* user needs both permissions to save a document */
+        if (! ($this->modx->hasPermission('save_document') && $this->resource->checkPolicy('save'))) {
+            if (! $this->modx->hasPermission('save_document') ) {
+                $this->setError($this->modx->lexicon('np_save_permission_denied'));
+            } else {}
+            if (!$this->resource->checkPolicy('save') ) {
+                $this->setError($this->modx->lexicon('np_save_this_permission_denied'));
+            }
+            return '';
+        }
 
         if (!$this->modx->hasPermission('allow_modx_tags')) {
             $allowedTags = '<p><br><a><i><em><b><strong><pre><table><th><td><tr><img><span><div><h1><h2><h3><h4><h5><font><ul><ol><li><dl><dt><dd>';
@@ -1272,6 +1305,7 @@ class Newspublisher {
                     $_POST[$k] = $this->modx->stripTags($v, $allowedTags);
                 }
         }
+        $oldFields = $this->resource->toArray();
 
         if (!empty($this->badwords)) {
             foreach ($_POST as $field => $val) {
@@ -1283,7 +1317,7 @@ class Newspublisher {
 
         /* correct timestamp resource fields */
         foreach ($_POST as $field => $val) {
-            if ($this->resource->_fieldMeta[$field]['phptype'] == 'timestamp') {
+            if (isset($this->resource->_fieldMeta[$field]) && $this->resource->_fieldMeta[$field]['phptype'] == 'timestamp') {
                 if (empty($_POST[$field])) {
                     unset($_POST[$field]);
                 } else {
@@ -1291,13 +1325,11 @@ class Newspublisher {
                 }
             }
         }
-        
-        $fields = $this->existing
-            ? array_merge($this->resource->toArray(), $_POST)
-            : array_merge($this->defaults, $_POST);
-                     
+        $fields = array_merge($oldFields, $_POST);
         if (!$this->existing) { /* new document */
 
+            /* ToDo: Move this to init()? */
+            /* set alias name of document used to store articles */
             if (empty($fields['alias'])) { /* leave it alone if filled */
                 if (!$this->aliasTitle) {
                     $suffix = !empty($this->props['aliasdatesuffix']) ? date($this->props['aliasdatesuffix']) : '-' . time();
@@ -1318,8 +1350,24 @@ class Newspublisher {
                 }
                 $fields['alias'] = $alias;
             }
+            /* set fields for new object */
 
+            /* set editedon and editedby for existing docs */
+            $fields['editedon'] = '0';
+            $fields['editedby'] = '0';
+
+            /* these *might* be in the $_POST array. Set them if not */
+            $fields['published'] = isset($_POST['published'])? $_POST['published']: $this->published;
+            $fields['hidemenu'] = isset($_POST['hidemenu'])? $_POST['hidemenu']: $this->hideMenu;
+            $fields['template'] = isset ($_POST['template']) ? $_POST['template'] : $this->template;
+            $fields['parent'] = isset ($_POST['parent']) ? $_POST['parent'] : $this->parentId;
+            $fields['searchable'] = isset ($_POST['searchable']) ? $_POST['searchable'] : $this->searchable;
+            $fields['cacheable'] = isset ($_POST['cacheable']) ? $_POST['cacheable'] : $this->cacheable;
+            $fields['richtext'] = isset ($_POST['richtext']) ? $_POST['richtext'] : $this->richtext;
+            $fields['createdby'] = $this->modx->user->get('id');
             $fields['content']  = $this->header . $fields['content'] . $this->footer;
+            $fields['context_key'] = $this->modx->context->get('key');
+
         }
 
         /* Add TVs to $fields for processor */
@@ -1333,6 +1381,7 @@ class Newspublisher {
              * This section can be removed when it's fixed *
              ********************************************* */
             if ($this->existing) {
+                /* @var $t_tv modTemplateVar */
                 $t_resourceTVs = $this->resource->getMany('TemplateVars');
                 $t_resourceId = $this->resource->get('id');
                 foreach ($t_resourceTVs as $t_tv) {
@@ -1348,6 +1397,7 @@ class Newspublisher {
             /* ****************************************** */
             $fields['tvs'] = true;
             foreach ($this->allTvs as $tv) {
+                /* @var $tv modtemplateVar */
                 $name = $tv->get('name');
                 
                 if ($tv->get('type') == 'date') {
@@ -1382,6 +1432,7 @@ class Newspublisher {
         } else {
             $response = $this->modx->runProcessor('resource/create', $fields);
         }
+        /* @var $response modProcessorResponse */
         if ($response->isError()) {
             if ($response->hasFieldErrors()) {
                 $fieldErrors = $response->getAllErrors();
@@ -1418,18 +1469,7 @@ class Newspublisher {
             if (empty($postId)) {
                 $postId = $this->existing? $this->existing : $this->resource->get('id');
             }
-            /* clear cache on new resource */
-            if (! $this->existing) {
-               $cacheManager = $this->modx->getCacheManager();
-               $cacheManager->clearCache(array (
-                    "{$this->resource->context_key}/",
-                ),
-                array(
-                    'objects' => array('modResource', 'modContext', 'modTemplateVarResource'),
-                    'publishing' => true
-                    )
-                );
-            }
+            /* Assume that the processor cleared the cache */
 
             $_SESSION['np_resource_id'] = $this->resource->get('id');
             $goToUrl = $this->modx->makeUrl($postId);
@@ -1445,7 +1485,6 @@ class Newspublisher {
 
     /** creates a JSON string to send in the resource_groups field
      * for resource/update or resource/create processors.
-     * If 'Parent' is supplied, the groups the parent resource belongs to are returned
      *
      * @access protected
      * @param string $resourceGroups - a comma-separated list of
@@ -1455,17 +1494,18 @@ class Newspublisher {
      * @return (string) (JSON encoded array)
      */
 
-    protected function _setGroups($resourceGroups) {
-      
+    protected function _setGroups($resourceGroups, $parentObj = null) {
+        /* @var $parentObj modResource */
         $values = array();
-        if ($resourceGroups == 'parent' || $resourceGroups == 'Parent') {
+        if ($resourceGroups == 'parent') {
 
-            $resourceGroups = (array) $this->parentObj->getMany('ResourceGroupResources');
+            $resourceGroups = (array) $parentObj->getMany('ResourceGroupResources');
 
             if (!empty($resourceGroups)) { /* parent belongs to at lease one resource group */
                 /* build $resourceGroups string from parent's groups */
                 $groupNumbers = array();
                 foreach ($resourceGroups as $resourceGroup) {
+                    /* @var $resourceGroup modResourceGroup */
                     $groupNumbers[] = $resourceGroup->get('document_group');
                 }
                 $resourceGroups = implode(',', $groupNumbers);
@@ -1480,9 +1520,10 @@ class Newspublisher {
         $groups = explode(',', $resourceGroups);
 
         foreach ($groups as $group) {
+            /* @var $groupObj modResourceGroup */
             $group = trim($group);
             if (is_numeric($group)) {
-                $groupObj = $this->modx->getObject('modResourceGroup', $group);
+                $groupObj = $this->modx->getObject('modResourceGroup', (integer) $group);
             } else {
                 $groupObj = $this->modx->getObject('modResourceGroup', array('name' => $group));
             }
@@ -1558,19 +1599,19 @@ class Newspublisher {
             }
         }
 
-        $fields = explode(',', $this->props['show']);
-        foreach ($fields as $field) {
-            $field = trim($field);
-        }
+        /* Ensure TV bindings do not contain an @EVAL binding */
+        foreach ($this->allTvs as $tv) {
+            /* @var $tv modTemplateVar */
+            $name = $tv->get('name');
+            $value = $_POST[$name];
+            if (is_array($value)) $value = implode('', $value);
+            if (isset($_POST[$name . '_time'])) $value .= $_POST[$name . '_time'];
 
-        foreach ($fields as $field) {
-            $value = $_POST[$field];
-            if (is_array($value)) $value = implode($value, '');
             if (stristr($value, '@EVAL')) {
                 $this->setError($this->modx->lexicon('np_no_evals_input'));
-                $_POST[$field] = '';
+                $_POST[$name] = '';
                 /* set fields to empty string */
-                $this->modx->toPlaceholder($field, '', $this->prefix);
+                $this->modx->toPlaceholder($name, '', $this->prefix);
                 $success = false;
             }
 
@@ -1592,6 +1633,7 @@ class Newspublisher {
         $this->modx->toPlaceholder($ph, $msg, $this->prefix);
     }
 public function my_debug($message, $clear = false) {
+    /* @var $chunk modChunk */
     global $modx;
 
     $chunk = $modx->getObject('modChunk', array('name'=>'debug'));
@@ -1611,6 +1653,3 @@ public function my_debug($message, $clear = false) {
 }
 
 } /* end class */
-
-
-?>

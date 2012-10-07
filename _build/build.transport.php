@@ -2,7 +2,7 @@
 /**
  * NewsPublisher Build Script
  *
- * Copyright 2011 Bob Ray
+ * Copyright 2011-2012 Bob Ray
 
  *
  * NewsPublisher is free software; you can redistribute it and/or modify it
@@ -33,6 +33,11 @@ $mtime = $mtime[1] + $mtime[0];
 $tstart = $mtime;
 set_time_limit(0);
 
+define('MODX_BASE_URL','http://localhost/addons/');
+define('MODX_MANAGER_URL','http://localhost/addons/manager/');
+define('MODX_ASSETS_URL','http://localhost/addons/assets/');
+define('MODX_CONNECTORS_URL','http://localhost/addons/connectors/');
+
 /* define sources */
 $root = dirname(dirname(__FILE__)) . '/';
 $sources= array (
@@ -42,6 +47,7 @@ $sources= array (
     'source_assets' => $root . 'assets/components/newspublisher',
     'data' => $root . '_build/data/',
     'docs' => $root . 'core/components/newspublisher/docs/',
+    'resolvers' => $root . '_build/resolvers/',
 );
 unset($root);
 
@@ -55,8 +61,8 @@ $modx->setLogTarget(XPDO_CLI_MODE ? 'ECHO' : 'HTML');
 
 /* set package info */
 define('PKG_NAME','newspublisher');
-define('PKG_VERSION','1.3.0');
-define('PKG_RELEASE','rc1');
+define('PKG_VERSION','1.4.1');
+define('PKG_RELEASE','rc');
 
 /* load builder */
 $modx->loadClass('transport.modPackageBuilder','',false, true);
@@ -67,6 +73,7 @@ $builder->registerNamespace('newspublisher',false,true,'{core_path}components/ne
 /* create snippet objects */
 
 /* create category */
+/* @var $category modCategory */
 $category= $modx->newObject('modCategory');
 $category->set('id',1);
 $category->set('category','NewsPublisher');
@@ -116,28 +123,48 @@ $vehicle->resolve('file',array(
 
 $builder->putVehicle($vehicle);
 
-
-
 /* Add filebrowser action */
 $modx->log(modX::LOG_LEVEL_INFO,'Adding filebrowser action.');
-$browserAction= $modx->newObject('modAction');
-$browserAction->fromArray(array(
-    'id' => 1,
-    'namespace' => 'newspublisher',
-    'controller' => 'filebrowser',
-    'haslayout' => false,
-    'parent' => 0,
-    'lang_topics' => '',
-    'assets' => '',            
-), '', true, true);
+$browserAction = include $sources['data'].'transport.browseraction.php';
 $vehicle= $builder->createVehicle($browserAction,array (
     xPDOTransport::PRESERVE_KEYS => false,
     xPDOTransport::UPDATE_OBJECT => true,
     xPDOTransport::UNIQUE_KEY => array ('namespace','controller'),
 ));
 $builder->putVehicle($vehicle);
-unset($vehicle,$browserAction);
 
+/* NewsPublisher access policy template */
+$modx->log(modX::LOG_LEVEL_INFO,'Adding access policy template.');
+$template = include $sources['data'].'transport.accesspolicytemplate.php';
+$vehicle= $builder->createVehicle($template,array (
+    xPDOTransport::PRESERVE_KEYS => false,
+    xPDOTransport::UPDATE_OBJECT => true,
+    xPDOTransport::UNIQUE_KEY => 'name',
+));
+$vehicle->resolve('php',array(
+    'source' => $sources['resolvers'] . 'accesspolicytemplate.resolver.php',
+));
+$builder->putVehicle($vehicle);
+
+/* NewsPublisher access policy */
+$modx->log(modX::LOG_LEVEL_INFO,'Adding access policy.');
+$policy = include $sources['data'].'transport.accesspolicy.php';
+$vehicle= $builder->createVehicle($policy,array (
+    xPDOTransport::PRESERVE_KEYS => false,
+    xPDOTransport::UPDATE_OBJECT => true,
+    xPDOTransport::UNIQUE_KEY => 'name',
+));
+$vehicle->resolve('php',array(
+    'source' => $sources['resolvers'] . 'accesspolicy.resolver.php',
+));
+
+$vehicle->resolve('php',array(
+    'source' => $sources['resolvers'] . 'filemove.resolver.php',
+));
+
+$builder->putVehicle($vehicle);
+
+unset($vehicle,$template,$policy,$browserAction);
 
 
 /* now pack in the license file, readme.txt and setup options */

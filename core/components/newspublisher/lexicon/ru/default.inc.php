@@ -26,57 +26,50 @@
  * @subpackage lexicon
  */
 
-/* newspublisher strings */
-$_lang['np_not_in_group'] = 'You are not in any of the authorized user groups.';
-$_lang['np_not_logged_in'] = 'You must be logged in to post.';
-$_lang['np_no_permissions'] = 'You do not have the necessary permissions.';
-$_lang['np_no_error_tpl'] = 'Could not find &amp;errortpl: ';
-$_lang['np_main_header'] = 'Create/Edit Resource';
-$_lang['np_error_presubmit'] = 'Sorry . . . There were one or more problems in producing the form:';
-$_lang['np_error_submit'] = 'Sorry . . . There were one or more problems with your submission:';
-$_lang['np_error_required'] = 'The [[+name]] field is required.';
-$_lang['np_missing_field'] = 'Missing field: [[+name]].';
-$_lang['np_no_resource_group'] = 'Could not find resource group: ';
-$_lang['np_no_resource'] = 'Failed to get resource: ';
-$_lang['np_no_template_name'] = 'Failed to get template: [[+name]].';
-$_lang['np_no_tvs'] = 'You wanted to display TVs, but this template has none.';
-$_lang['np_no_tv'] = "You wanted to display a TV, but this template doesn't have it: ";
-$_lang['np_unauthorized'] = 'You are not allowed to publish articles.';
-$_lang['np_parent_not_sent'] = 'You set &amp;template to parent but did not include the parentid parameter.';
-$_lang['np_parent_not_found'] = 'You set a property to `parent` but the parent object was not found: .';
-$_lang['np_resource_save_failed'] = 'An error occurred when saving the resource.';
-$_lang['np_to_template_id'] = 'There is no template with this number: ';
-$_lang['np_to_template_name'] = 'There is no template with this name: ';
-$_lang['np_date_hint'] = '(Y-M-D)';
-$_lang['np_time_hint'] = '(Time - any format)';
-$_lang['np_date_format'] = 'Y-ds-m-ds-d';
-$_lang['np_invalid_date'] = 'Invalid date!';
-$_lang['np_view_permission_denied'] = 'You do not have permission to view any document';
-$_lang['np_view_this_permission_denied'] = 'You do not have permission to view this document';
-$_lang['np_create_permission_denied'] = 'You do not have permission to create a document';
-$_lang['np_save_permission_denied'] = 'You do not have permission to save any document';
-$_lang['np_save_this_permission_denied'] = 'You do not have permission to save this document';
-$_lang['np_no_edit_self'] = 'You cannot edit the newspublisher page.';
-$_lang['np_no_parent'] = 'Property is set to parent but doc has no parent: ';
-$_lang['np_post_save_no_resource'] = 'Unable to get resource after save';
-$_lang['np_illegal_value'] = 'Illegal value for &amp;';
-$_lang['np_unknown_field'] = 'Unknown field in _setDefault(): ';
-$_lang['np_no_system_setting'] = 'Field is set to System Default but System Setting is not set: ';
-$_lang['np_no_tpl'] = 'Could not find Tpl chunk: ';
-$_lang['np_not_our_tv'] = 'You want to display a TV that is not attached to this template.   ';
-$_lang['np_no_permission'] = ' (you may not have permission for the document or group referred to)';
-$_lang['np_no_evals'] = 'Cannot edit TVs with @EVAL bindings in the front end: ';
-$_lang['np_no_evals_input'] = 'Cannot use @EVAL bindings in the front end.';
-$_lang['np_no_modx_tags'] = 'You do not have permission to edit resources containing modx tags.';
-$_lang['np_no_rte'] = 'The &amp;initrte parameter is not set, but you asked for this richtext field: ';
-$_lang['np_no_datepicker'] = 'The &amp;initdatepicker parameter is not set, but you asked for this date field: ';
-$_lang['np_launch_image_browser'] = 'Select an image';
-$_lang['np_launch_file_browser'] = 'Select a file';
-$_lang['np_no_action_found'] = "The 'filebrowser' action could not be found. You may have deleted it accidentally. Please reinstall NewsPublisher.";
-$_lang['np_media_source_access_denied'] = "You don't have the permission to access the media source associated with the TV: ";
-$_lang['np_source_error'] = 'No media source is associated with the TV: ';
-$_lang['np_source_wctx_error'] = 'The working context of the media source could not be retrieved for the TV: ';
+include_once(dirname(dirname(__FILE__)).'/en/default.inc.php'); // fallback for missing defaults or new additions
 
+
+/* newspublisher strings */
+$_lang['np_not_in_group'] = 'Вы не в одной из авторизированых групп пользователей.';
+$_lang['np_not_logged_in'] = 'Вы должны авторизоваться, чтобы публиковать сообщения.';
+$_lang['np_no_permissions'] = 'У вас нет необходимых разрешений.';
+$_lang['np_no_error_tpl'] = 'Нету &amp;errortpl: ';
+$_lang['np_main_header'] = 'Создать/Редактировать документ';
+$_lang['np_error_presubmit'] = 'Извините . . . В форме были допущены ошибки:';
+$_lang['np_error_submit'] = 'Извините . . . Были допущены ошибки:';
+$_lang['np_error_required'] = 'Поле [[+name]] обязательно.';
+$_lang['np_missing_field'] = 'Отсутствует поле: [[+name]].';
+$_lang['np_no_resource_group'] = 'Не удалось найти группу ресурсов: ';
+$_lang['np_no_resource'] = 'Не удалось найти ресурс: ';
+$_lang['np_no_template_name'] = 'Не удалось получить шаблон: [[+name]].';
+$_lang['np_no_tvs'] = 'Вы хотите отобразить TVs, но в этом шаблоне их нет.';
+$_lang['np_no_tv'] = "Вы хотите отобразить TV, но в этом шаблоне его нет: ";
+$_lang['np_unauthorized'] = 'Вам не разрешено публиковать.';
+$_lang['np_parent_not_sent'] = 'Вы утсановили &amp;template к родительскому, но не указали параметр parentid.';
+$_lang['np_parent_not_found'] = 'Вы указали параметр `parent` но parent объект не найден: .';
+$_lang['np_resource_save_failed'] = 'Возникла ошибка при сохранении документа.';
+$_lang['np_to_template_id'] = 'Нету шаблона с таким номером: ';
+$_lang['np_to_template_name'] = 'Нету шаблона с таким именем: ';
+$_lang['np_date_hint'] = '(Г-М-Д)';
+$_lang['np_time_hint'] = '(Время - любой формат)';
+$_lang['np_date_format'] = 'Y-ds-m-ds-d';
+$_lang['np_view_permission_denied'] = 'У Вас нету прав на просмотр этого документа.';
+$_lang['np_create_permission_denied'] = 'У Вас нету прав на создание документов.';
+$_lang['np_save_permission_denied'] = 'У Вас нету прав на сохранение документов';
+$_lang['np_no_edit_self'] = 'Нельзя редактировать страницу NewsPublisher.';
+$_lang['np_no_parent'] = 'Установлен параметр но у документа нету родителя: ';
+$_lang['np_post_save_no_resource'] = 'Невозможно получить доступк ресурсу после сохранения.';
+$_lang['np_illegal_value'] = 'Неправильное значение для &amp;';
+$_lang['np_unknown_field'] = 'Неизвестное поле в _setDefault(): ';
+$_lang['np_no_system_setting'] = 'Поле установлено как Системные установки по умолчанию, но Системные установки не установлены: ';
+$_lang['np_no_tpl'] = 'Нельзя найти Tpl чанк: ';
+$_lang['np_not_our_tv'] = 'Вы хотите отобразить поле TV который не прикреплен к этому шаблону.  ';
+$_lang['np_no_permission'] = ' (возможно у Вас нету прав на доумент или группу)';
+$_lang['np_no_evals'] = 'Нельзя редактировать TVs с @EVAL связанные с фронтэндом: ';
+$_lang['np_no_evals_input'] = 'Нелльзя использовать @EVAL связанный с фронтэндом.';
+$_lang['np_no_modx_tags'] = 'У Вас нету прав чтобы редактировать ресурс содержащий modx tags.';
+$_lang['np_no_rte'] = 'Параметр &amp;initrte не установлен, а Вы запросили поле richtext: ';
+$_lang['np_no_datepicker'] = 'Параметр &amp;initdatepicker не установлен, а Вы запросили поле с датой: ';
 
 /* missing resource field lexicon strings */
 $_lang['resource_pub_date'] =  'Publish Date';

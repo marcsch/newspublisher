@@ -4,10 +4,14 @@ div.newspublisher {
     padding: 2em 10em 4em 10em;
     background-color:#eeeeee;
 }
-
+/* keeps Tiny toolbar from getting messed up */
+table {
+ margin: 0 !important;
+ padding: 0 !important;
+}
 div.newspublisher form {
     margin: 0;
-    padding:20px 0px 10px 0px;
+    padding:20px 0 10px 0;
 }
 textarea#np-content {
     width:95%;
@@ -22,7 +26,7 @@ textarea#np-introtext {
 div.newspublisher label.fieldlabel {
     width: 10em;
     text-align: left;
-    margin: 12px 5px 3px 0px;
+    margin: 12px 5px 3px 0;
     padding:0;
     display: block;
     font-weight: bold;
@@ -38,12 +42,12 @@ div.np-date-hints {
     padding:0;
 }
 span.np-date-hint {
-    margin: 1px 0px 3px 0px !important;
-    padding: 0px;
+    margin: 1px 0 3px 0 !important;
+    padding: 0;
 }
 span.np-time-hint {
     margin: 1px 120px 3px 110px !important;
-    padding: 0px;
+    padding: 0;
 }
 
 div.newspublisher textarea.textarea {
@@ -103,7 +107,7 @@ div.newspublisher span.option {
 }
 div.newspublisher legend {
    font-weight: bold;
-   padding:0px 6px 0px 6px;
+   padding:0 6px 0 6px;
 }
 div.newspublisher input {
     font-family: arial, sans-serif;
@@ -120,20 +124,21 @@ span.errormessage {
     color:red;
     font-weight: bold;
     display:block;
-    margin:5px 0px 5px 0px;
+    margin:5px 0 5px 0;
     padding:0;
 }
 span.fielderrormessage {
     color:red;
     font-weight: bold;
     display:block;
-    margin:20px 0px 0px 0px;
+    margin:20px 0 0 0;
     padding:0;
 }
 div.newspublisher input.submit {
     display:inline;
     margin: 30px;
     padding:0;
+    /* width:8em; */
     width:8em;
 }
 div.newspublisher input.int {
@@ -161,7 +166,7 @@ div.newspublisher input.radio {
 div.newspublisher fieldset {
      display: block;
     padding:5px 5px 10px 10px;
-    margin:10px 0px 0px 0px;
+    margin:10px 0 0 0;
     background-color:white;
 }
 div.newspublisher fieldset p {
@@ -199,3 +204,67 @@ fieldset.np-textbox {
 fieldset.np-email {
    width:10em;
 }
+/* NewsPublisher Tabs CSS */
+
+.np-hidden{
+  display:none !important;
+}
+
+#np-tabs {
+    margin:0;
+    padding:0 0 2em 0;
+}
+
+#np-tabs ul {
+    list-style: none outside none;
+    margin: 10px 0 0 0;
+    padding: 0;
+
+}
+
+#np-tabs li {
+    margin:0;
+    padding:0;
+    float: left;
+    /* margin-bottom: 0.2em; */
+}
+#np-tabs li a {
+    background-color: #DDDDDD;
+    background-image: url("tab-background.png");
+    background-repeat: repeat-x;
+    color: #444444;
+
+    display: block;
+    font-weight: bold;
+    padding: 0.4em 0.5em;
+}
+#np-tabs li a:hover, #np-tabs li a.filterSelected {
+    background-color: #55BBFF;
+    color: #222222;
+    background-image: url("tab-background-hover.png") ;
+    background-repeat: repeat-x;
+}
+#np-tabs li a:active {
+    background-color: #3399DD;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) inset;
+}
+#np-tabs li a {
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    padding: 10px 15px;
+}
+#np-tabs li:first-child a {
+   border-left: medium none;
+    border-top-left-radius: 20px;
+    padding-left: 20px;
+}
+#np-tabs li:last-child a {
+    border-top-right-radius: 20px;
+    padding-right: 20px;
+}
+
+#np-tabs a {
+  text-decoration: none;
+  font-size: 18px;
+}
+

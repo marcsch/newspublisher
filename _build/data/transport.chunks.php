@@ -1,9 +1,9 @@
 <?php
 /**
  * NewsPublisher transport chunks
- * Copyright 2011 Bob Ray
+ * Copyright 2011-2012 Bob Ray
  * @author Bob Ray <http://bobsguides.com>
- * 1/15/11
+ * Created 1/15/11
  *
  * NewsPublisher is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -155,5 +155,22 @@ $chunks[14]->fromArray(array(
     'properties' => '',
 ),'',true,true);
 
+$chunks[15]= $modx->newObject('modChunk');
+$chunks[15]->fromArray(array(
+    'id' => 15,
+    'name' => 'npTabsJsTpl',
+    'description' => 'Tpl chunk with JavaScript for NewsPublisher Tabs',
+    'snippet' => file_get_contents($sources['source_core'].'/elements/chunks/nptabsjs.chunk.tpl'),
+    'properties' => '',
+),'',true,true);
+
+$chunks[16]= $modx->newObject('modChunk');
+$chunks[16]->fromArray(array(
+    'id' => 16,
+    'name' => 'npTabsJsMinTpl',
+    'description' => 'Tpl chunk with Minimized JavaScript for NewsPublisher Tabs',
+    'snippet' => file_get_contents($sources['source_core'].'/elements/chunks/nptabsjsmin.chunk.tpl'),
+    'properties' => '',
+),'',true,true);
 
 return $chunks;

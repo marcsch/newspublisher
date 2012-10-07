@@ -1,7 +1,8 @@
 <?php
+
 /**
  * NewsPublisher
- * Copyright 2011 Bob Ray
+ * Copyright 2011-2012 Bob Ray
  *
  * NewsPublisher is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -29,8 +30,6 @@
  * /
 
 /*
-  @version Version 1.3.0-rc1
-  Modified: July 10, 2011
 
    NOTE: You may need the latest version of TinyMCE for rich text editing.
 
@@ -73,8 +72,8 @@
 
     @property aliastitle  - (optional) Set to 1 to use lowercase, hyphenated, page title as alias. Defaults to 1.
                        If 0,'article-(date created)' is used. Ignored if alias is filled in form.
-    @property aliasprefix - (optional) Prefix to be prepended to alias for new documents with an empty alias; alias will be aliasprefix - timestamp (or alias - customDate if the 'aliasdatesuffix property was set)";
-    @property aliasdatesuffix - (optional) Allows to have a formatted date/time instead of the timestamp suffix. Example: '_Ymd' leads to 'aliasprefix_20110707' (see documentation for the php date() function for all formatting options). Default: empty";
+    @property aliasprefix - (optional) Prefix to be prepended to alias for new documents with an empty alias; alias will be aliasprefix - timestamp (or alias - customDate if the 'aliasdateformat property was set)";
+    @property aliasdateformat - (optional) Allows to have a formatted date/time instead of the timestamp suffix. Example: '_Ymd' leads to 'aliasprefix_20110707' (see documentation for the php date() function for all formatting options). Default: empty";
     @property clearcache  - (optional) When set to 1, cache will be cleared after saving the resource; default: 1.
     @property listboxmax  - (optional) Maximum length for listboxes. Default is 8 items.
     @property cssfile     - (optional) Name of CSS file to use, or `0` for no CSS file; defaults to newspublisher.css.
@@ -92,12 +91,32 @@
     @property intmaxlength- (optional) Max length for integer input fields; default: 10
     @property textmaxlength- (optional) Max length for text input fields; default 60
     @property hoverhelp    - (optional) Show help when hovering over field caption: default `1`
+    @property usetabs  - (optional) show the fields on separate tabs
+    @property tabs - (required if usetabs is set); JSON string with the tab specifications
+    @property activetab - (optional) Tab to display when form is shown; if missing, all tabs will show
 
 */
 
 /** @define "$modx->getOption('np.core_path',null,$modx->getOption('core_path').'components/newspublisher/')" "VALUE" */
-require_once $modx->getOption('np.core_path', null, $modx->getOption('core_path') . 'components/newspublisher/') . 'classes/newspublisher.class.php';
 
+    /* @var $modx modX */
+
+$errorMessage = '';
+$formTpl = '';
+
+
+$classPath = $modx->getOption('np.core_path', null, $modx->getOption('core_path') . 'components/newspublisher/') . 'model/newspublisher/';
+
+if (! $modx->loadClass('Newspublisher',$classPath, true, true)) {
+    return '<h3>Could not load Newspublisher Class</h3><p>Path: ' . $classPath . '</p>';
+}
+
+
+/* Let &require override &required (it's a common mistake to use &require)
+   this will only happen if the user explicitly sets &require in the tag */
+if (isset($scriptProperties['require'])) {
+    $scriptProperties['required'] = $scriptProperties['require'];
+}
 /* make sure some prefix is set in $scriptProperties */
 
 $scriptProperties['prefix'] = empty($scriptProperties['prefix'])
@@ -108,12 +127,22 @@ $np_prefix = $scriptProperties['prefix'];
 $np = new Newspublisher($modx, $scriptProperties);
 $np->init($modx->context->get('key'));
 
-/* get error Tpl chunk */
-//$errorTpl = str_replace('[[+prefix]]', $np_prefix, $np->getTpl('errorTpl'));
-//$fieldErrorTpl = str_replace('[[+prefix]]', $np_prefix, $np->getTpl('fieldErrorTpl'));
-
 $errorTpl =  $np->getTpl('ErrorTpl');
 $fieldErrorTpl = $np->getTpl('FieldErrorTpl');
+$errorHeaderPresubmit = $modx->lexicon('np_error_presubmit');
+$errorHeaderSubmit = $modx->lexicon('np_error_submit');
+
+/* Handle errors in init() */
+$errors = $np->getErrors();
+if (!empty($errors)) {
+
+    $modx->toPlaceholder('error_header', $errorHeaderPresubmit, $np_prefix);
+    foreach ($errors as $error) {
+        $errorMessage .= str_replace('[[+' . $np_prefix . '.error]]', $error, $errorTpl);
+    }
+    $modx->toPlaceholder('errors_presubmit', $errorMessage, $np_prefix);
+    return '<div class="newspublisher">' . $errorHeaderPresubmit . $errorMessage . '</div>';
+}
 
 /* add Cancel button only if requested */
 if (!empty ($scriptProperties['cancelid'])) {
@@ -124,15 +153,10 @@ if (!empty ($scriptProperties['cancelid'])) {
 }
 $modx->toPlaceholder('cancel_url', $cancelUrl, $np_prefix);
 
-$errorHeaderPresubmit = $modx->lexicon('np_error_presubmit');
-$errorHeaderSubmit = $modx->lexicon('np_error_submit');
-
 $formTpl .= $np->displayForm($scriptProperties['show']);
 
-/* just in case */
-//$formTpl = str_replace('[[+prefix]]', $np_prefix, $formTpl);
-
 /* handle pre-submission errors (no form shown) */
+
 $errors = $np->getErrors();
 
 if (!empty($errors)) {
@@ -144,6 +168,9 @@ if (!empty($errors)) {
     $modx->toPlaceholder('errors_presubmit', $errorMessage, $np_prefix);
     return '<div class="newspublisher">' . $errorHeaderPresubmit . $errorMessage . '</div>';
 }
+
+
+
 // get postback status
 $isPostBack = $np->getPostBack();
 
@@ -196,4 +223,3 @@ if ($isPostBack) {
 } else { /* just return the form */
     return $formTpl;
 }
-?>

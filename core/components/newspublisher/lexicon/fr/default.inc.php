@@ -24,6 +24,9 @@
  * @package newspublisher
  * @subpackage lexicon
  */
+include_once(dirname(dirname(__FILE__)).'/en/default.inc.php'); // fallback for missing defaults or new additions
+
+
 $_lang['np_no_error_tpl'] = 'Impossible de trouver &amp;errortpl: [[+tpl]]';
 $_lang['np_main_header'] = 'Créer/éditer une ressource';
 $_lang['np_error_presubmit'] = 'Désolé… il y a eu un (ou plusieurs) problème(s) à la création du formulaire:';
@@ -40,5 +43,8 @@ $_lang['np_to_template_id'] = 'Il n\'y a pas de modèle ayant pour ID: [[+id]].'
 $_lang['np_to_template_name'] = 'Il n\'y a pas de modèle ayant pour nom: [[+name]].';
 $_lang['np_date_format'] = 'd-dt-m-dt-Y';
 
-
-
+/* messages for NP tabs */
+$_lang['np_could_not_find_tab_field'] = 'Could not find tab field: ';
+$_lang['np_invalid_tabs'] = 'npTabs property is invalid or empty';
+$_lang['np_tabs_other'] = 'Other';
+$_lang['np_tabs_show_all'] = "Show All";
