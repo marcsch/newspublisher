@@ -1305,7 +1305,6 @@ class Newspublisher {
                     $_POST[$k] = $this->modx->stripTags($v, $allowedTags);
                 }
         }
-        $oldFields = $this->resource->toArray();
 
         if (!empty($this->badwords)) {
             foreach ($_POST as $field => $val) {
@@ -1325,14 +1324,18 @@ class Newspublisher {
                 }
             }
         }
-        $fields = array_merge($oldFields, $_POST);
+        
+        $fields = $this->existing
+            ? array_merge($this->resource->toArray(), $_POST)
+            : array_merge($this->defaults, $_POST);
+                     
         if (!$this->existing) { /* new document */
 
             /* ToDo: Move this to init()? */
             /* set alias name of document used to store articles */
             if (empty($fields['alias'])) { /* leave it alone if filled */
                 if (!$this->aliasTitle) {
-                    $suffix = !empty($this->props['aliasdatesuffix']) ? date($this->props['aliasdatesuffix']) : '-' . time();
+                    $suffix = !empty($this->props['aliasdateformat']) ? date($this->props['aliasdateformat']) : '-' . time();
                     if (!empty($this->props['aliasprefix'])) {
                         $alias = $this->props['aliasprefix'] . $suffix;
                     } else {
@@ -1350,23 +1353,8 @@ class Newspublisher {
                 }
                 $fields['alias'] = $alias;
             }
-            /* set fields for new object */
 
-            /* set editedon and editedby for existing docs */
-            $fields['editedon'] = '0';
-            $fields['editedby'] = '0';
-
-            /* these *might* be in the $_POST array. Set them if not */
-            $fields['published'] = isset($_POST['published'])? $_POST['published']: $this->published;
-            $fields['hidemenu'] = isset($_POST['hidemenu'])? $_POST['hidemenu']: $this->hideMenu;
-            $fields['template'] = isset ($_POST['template']) ? $_POST['template'] : $this->template;
-            $fields['parent'] = isset ($_POST['parent']) ? $_POST['parent'] : $this->parentId;
-            $fields['searchable'] = isset ($_POST['searchable']) ? $_POST['searchable'] : $this->searchable;
-            $fields['cacheable'] = isset ($_POST['cacheable']) ? $_POST['cacheable'] : $this->cacheable;
-            $fields['richtext'] = isset ($_POST['richtext']) ? $_POST['richtext'] : $this->richtext;
-            $fields['createdby'] = $this->modx->user->get('id');
             $fields['content']  = $this->header . $fields['content'] . $this->footer;
-            $fields['context_key'] = $this->modx->context->get('key');
 
         }
 
